@@ -1,0 +1,41 @@
+users
+  id              uuid PK
+  email           citext UNIQUE NOT NULL
+  password_hash   text NOT NULL          -- bcrypt cost 12
+  full_name       text NOT NULL
+  role            user_role NOT NULL DEFAULT 'buyer'   -- buyer|approver|admin
+  is_active       boolean NOT NULL DEFAULT true
+  created_at, updated_at
+
+purchase_orders
+  id              uuid PK
+  po_number       text UNIQUE NOT NULL   -- PO-2026-0001, dari sequence
+  requester_id    uuid FK -> users
+  title           text NOT NULL
+  notes           text
+  total_amount    numeric(16,2) NOT NULL DEFAULT 0   -- dihitung backend, bukan dikirim klien
+  status          po_status NOT NULL DEFAULT 'draft'
+  needed_by       date
+  submitted_at, decided_at   timestamp
+  decided_by      uuid FK -> users
+  decision_note   text
+  created_at, updated_at
+  INDEX (requester_id, status), (status, created_at DESC)
+
+attachments
+  id, po_id FK ON DELETE CASCADE, uploaded_by FK -> users
+  original_filename   text        -- hanya untuk ditampilkan, TIDAK dipakai di path
+  stored_path         text        -- uploads/{po_id}/{uuid}.pdf
+  mime_type, file_size bigint, checksum_sha256
+  created_at
+
+po_status_history          -- audit trail, append-only
+  id, po_id FK, from_status, to_status
+  actor_id FK -> users, note text, created_at
+  INDEX (po_id, created_at)
+
+refresh_tokens
+  id, user_id FK, token_hash, expires_at, revoked_at, user_agent, ip
+
+audit_logs                 -- untuk pemakaian bisnis
+  id, actor_id, action, entity, entity_id, ip, user_agent, metadata jsonb, created_at
