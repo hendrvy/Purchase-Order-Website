@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS purchase_orders (
     company_id INTEGER NOT NULL,
     attachment_id INTEGER NOT NULL,
     resi_number VARCHAR(30) DEFAULT NULL,
-    status VARCHAR(50) DEFAULT 'verifikasi' CHECK (status IN ('verifikasi','diproses', 'dikirim', 'selesai', 'dibatalkan')),
+    status VARCHAR(50) DEFAULT 'verifying' CHECK (status IN ('verifying','process', 'shipping', 'complete', 'rejected')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP,  -- NULL = active, timestamp = soft deleted
