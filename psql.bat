@@ -1,0 +1,1 @@
+docker compose exec postgres psql -h localhost -U smsadmin123 -d po_db

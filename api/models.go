@@ -18,24 +18,20 @@ type Company struct {
 type PurchaseOrder struct {
 	ID           uint      `json:"id"`
 	PONumber     string    `json:"po_number"`
-	CompanyID    string    `json:"company_id"`
-	AttachmentId uint      `json:"attachment_id"`
+	CompanyID    uint      `json:"company_id"`
+	AttachmentID uint      `json:"attachment_id"`
+	Status       string    `json:"status"`
 	UploadedAt   time.Time `json:"uploaded_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
 }
 
-type AttachmentId struct {
+type Attachment struct {
 	ID         uint      `json:"id"`
 	FileName   string    `json:"filename"`
 	FilePath   string    `json:"filepath"`
+	MimeType   string    `json:"mime_type"`
 	UploadedAt time.Time `json:"uploaded_at"`
-	UpdatedAt  time.Time `json:"Updated_at"`
-}
-
-type PurchaseOrderHistory struct {
-	ID       uint   `json:"id"`
-	PO_ID    string `json:"po_id"`
-	MimeType string `json:"mime_type"`
+	UpdatedAt  time.Time `json:"updated_at"`
 }
 
 type LoginRequest struct {
