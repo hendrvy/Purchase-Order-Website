@@ -49,7 +49,8 @@ CREATE TABLE IF NOT EXISTS purchase_orders (
     po_number VARCHAR(50) UNIQUE NOT NULL,
     company_id INTEGER NOT NULL,
     attachment_id INTEGER NOT NULL,
-    status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'processing')),
+    resi_number VARCHAR(30) DEFAULT NULL,
+    status VARCHAR(50) DEFAULT 'verifikasi' CHECK (status IN ('verifikasi','diproses', 'dikirim', 'selesai', 'dibatalkan')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP,  -- NULL = active, timestamp = soft deleted
