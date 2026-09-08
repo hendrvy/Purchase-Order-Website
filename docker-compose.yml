@@ -23,5 +23,17 @@ services:
     depends_on:
       - postgres
 
+  nginx:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.nginx
+    container_name: nginx-web
+    ports:
+      - "80:80"
+    volumes:
+      - ./web:/usr/share/nginx/html:ro
+    depends_on:
+      - api
+
 volumes:
   postgres_data:
