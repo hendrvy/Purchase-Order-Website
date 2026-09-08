@@ -63,7 +63,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	if user.Password == logReq.Password {
+	if user.Password != logReq.Password {
 		fmt.Println("Failed Login")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Username or password is incorrect!"})
 		return
