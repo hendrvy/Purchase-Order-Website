@@ -2,44 +2,50 @@ package api
 
 import (
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type Company struct {
-	ID          uint       `json:"id"`
-	Username    string     `json:"username"`
-	CompanyName string     `json:"company_name"`
-	Password    string     `json:"password,omitempty"`
-	Email       string     `json:"email"`
-	Phone       string     `json:"phone"`
-	CreatedAt   time.Time  `json:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at"`
-	DeletedAt   *time.Time `json:"deleted_at,omitempty"`
+	ID          uint           `json:"id" gorm:"primaryKey"`
+	Username    string         `json:"username" binding:"required" gorm:"unique;not null"`
+	CompanyName string         `json:"company_name" binding:"required" gorm:"not null"`
+	Password    string         `json:"password,omitempty" gorm:"not null"`
+	Email       string         `json:"email" gorm:"unique;not null"`
+	Phone       string         `json:"phone"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
+	DeletedAt   gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
 }
 
 type PurchaseOrder struct {
-	ID           uint       `json:"id"`
-	PONumber     string     `json:"po_number"`
-	CompanyID    uint       `json:"company_id"`
-	AttachmentID uint       `json:"attachment_id"`
-	ResiNumber   string     `json:"resi_number"`
-	Status       string     `json:"status"`
-	CreatedAt    time.Time  `json:"created_at"`
-	UpdatedAt    time.Time  `json:"updated_at"`
-	DeletedAt    *time.Time `json:"deleted_at,omitempty"`
+	ID           uint           `json:"id" gorm:"primaryKey"`
+	PONumber     string         `json:"po_number" gorm:"not null"`
+	CompanyID    uint           `json:"company_id" gorm:"not null"`
+	AttachmentID uint           `json:"attachment_id" gorm:"not null"`
+	ResiNumber   string         `json:"resi_number"`
+	Status       string         `json:"status" gorm:"default:verifying"`
+	CreatedAt    time.Time      `json:"created_at"`
+	UpdatedAt    time.Time      `json:"updated_at"`
+	DeletedAt    gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
 }
 
 type Attachment struct {
-	ID        uint       `json:"id"`
-	FileName  string     `json:"filename"`
-	FilePath  string     `json:"filepath"`
-	MimeType  string     `json:"mime_type"`
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at"`
-	DeletedAt *time.Time `json:"deleted_at,omitempty"`
+	ID        uint           `json:"id" gorm:"primaryKey"`
+	FileName  string         `json:"filename" gorm:"not null"`
+	FilePath  string         `json:"filepath" gorm:"not null"`
+	MimeType  string         `json:"mime_type"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
 }
 
 type HelloRequest struct {
 	Message string `json:"message" binding:"required"`
+}
+
+type RegisterRequest struct {
+	Company Company `json:"company" binding:"required"`
 }
 
 type LoginRequest struct {
