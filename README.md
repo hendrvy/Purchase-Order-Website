@@ -21,7 +21,7 @@ go run cmd/main.go
 ### `/frontend`
 React frontend application (will be developed).
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Backend
 ```bash
@@ -42,10 +42,10 @@ npm start
 docker-compose up
 ```
 
-## 📋 Environment Variables
+## Environment Variables
 Copy `.env` file dari root atau backend folder sesuai kebutuhan.
 
-## 🔧 Development
+## Development
 
 - Backend: Go 1.26.0 + Gin Framework
 - Database: PostgreSQL
