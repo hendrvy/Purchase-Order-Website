@@ -1,4 +1,4 @@
-module Purchase-Order-Website
+module Purchase-Order-Website/backend
 
 go 1.26.0
 

@@ -1,2 +1,16 @@
+# Environment
 .env
+backend/.env
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+.DS_Store
+
+# Backend
+backend/tmp/
+backend/.env.local
+
+# Legacy
 web/
