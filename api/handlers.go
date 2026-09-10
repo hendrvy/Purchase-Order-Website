@@ -70,8 +70,13 @@ func Login(c *gin.Context) {
 	}
 
 	response = LoginResponse{
-		Token:   "Success",
-		Company: Company{},
+		Token: "Success",
+		Company: Company{
+			ID:          user.ID,
+			Username:    user.Username,
+			CompanyName: user.CompanyName,
+			Email:       user.Email,
+		},
 	}
 
 	c.JSON(http.StatusOK, response)
