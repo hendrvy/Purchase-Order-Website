@@ -1,0 +1,22 @@
+# Frontend
+
+
+# Git
+.git
+.gitignore
+
+# IDEs
+.vscode
+.idea
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env.local
+
+# Build
+.build
+*.log
