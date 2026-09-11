@@ -58,6 +58,14 @@ type LoginResponse struct {
 	Company Company `json:"company"`
 }
 
+type TokenRequest struct {
+	Token string `json:"token"`
+}
+
+type TokenResponse struct {
+	Valid bool `json:"valid"`
+}
+
 type ChangePasswordRequest struct {
 	CurrentPassword string `json:"current_password" binding:"required"`
 	NewPassword     string `json:"new_password" binding:"required"`
