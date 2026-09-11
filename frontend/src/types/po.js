@@ -47,6 +47,7 @@ export const TERMINAL_PO_STATUSES = ['completed', 'rejected', 'cancelled']
  * @property {string} [decision_note]
  * @property {string} created_at
  * @property {string} updated_at
+ * @property {string} resi_number
  */
 
 /**
