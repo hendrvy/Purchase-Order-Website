@@ -13,7 +13,7 @@ import (
 var DB *gorm.DB
 
 func DBConnect() *gorm.DB {
-	var dsn string = "host=postgres user=smsadmin123 password=puderpuder123 dbname=Purchase-Order-Website port=5432 sslmode=disable"
+	var dsn string = "host=localhost user=smsadmin123 password=puderpuder123 dbname=Purchase-Order-Website port=5432 sslmode=disable"
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect to database")
@@ -265,7 +265,7 @@ func Register(c *gin.Context) {
 		Message: "Company registered successfully",
 		Data: map[string]interface{}{
 			"id":           company.ID,
-			"username":    company.Username,
+			"username":     company.Username,
 			"company_name": company.CompanyName,
 			"email":        company.Email,
 			"phone":        company.Phone,

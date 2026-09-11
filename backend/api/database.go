@@ -10,12 +10,15 @@ import (
 
 // GetAllPurchaseOrdersDB - Get all purchase orders from database
 func GetAllPurchaseOrdersDB() ([]PurchaseOrder, error) {
-	// TODO: Implement logic
-	// - Query all purchase orders
-	// - Apply pagination
-	// - Return list of purchase orders
-	fmt.Println("Getting all purchase orders")
-	return []PurchaseOrder{}, nil
+	var purchaseOrder []PurchaseOrder
+
+	result := DB.Find(&purchaseOrder)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return purchaseOrder, nil
 }
 
 // GetPurchaseOrderByIDDB - Get purchase order by ID from database
@@ -24,7 +27,16 @@ func GetPurchaseOrderByIDDB(id uint) (*PurchaseOrder, error) {
 	// - Query purchase order by ID
 	// - Return purchase order or error if not found
 	fmt.Printf("Getting purchase order with ID: %d\n", id)
-	return &PurchaseOrder{}, nil
+
+	var poByID PurchaseOrder
+
+	result := DB.First(&poByID, id)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return &poByID, nil
 }
 
 // CreatePurchaseOrderDB - Create purchase order in database
@@ -34,6 +46,15 @@ func CreatePurchaseOrderDB(po *PurchaseOrder) error {
 	// - Create purchase order in database
 	// - Return error if failed
 	fmt.Println("Creating purchase order in database")
+
+	result := DB.Create(po)
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	fmt.Printf("Created purchase order with id : %v \n", po.ID)
+
 	return nil
 }
 
@@ -62,7 +83,15 @@ func GetPurchaseOrdersByCompanyDB(companyID uint) ([]PurchaseOrder, error) {
 	// - Apply pagination and filtering
 	// - Return list of purchase orders
 	fmt.Printf("Getting purchase orders for company ID: %d\n", companyID)
-	return []PurchaseOrder{}, nil
+
+	var poByCompany []PurchaseOrder
+	result := DB.Where("company_id = ?", companyID).Find(&poByCompany)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return poByCompany, nil
 }
 
 // ============================================================================
