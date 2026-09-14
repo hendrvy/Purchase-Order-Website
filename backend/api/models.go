@@ -24,6 +24,7 @@ type PurchaseOrder struct {
 	CompanyID    uint           `json:"company_id" gorm:"not null"`
 	AttachmentID uint           `json:"attachment_id" gorm:"not null"`
 	ResiNumber   string         `json:"resi_number"`
+	Notes        string         `json:"notes"`
 	Status       string         `json:"status" gorm:"default:verifying"`
 	CreatedAt    time.Time      `json:"created_at"`
 	UpdatedAt    time.Time      `json:"updated_at"`

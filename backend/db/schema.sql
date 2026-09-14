@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS purchase_orders (
     company_id INTEGER NOT NULL,
     attachment_id INTEGER NOT NULL,
     resi_number VARCHAR(30) DEFAULT NULL,
+    notes VARCHAR(255) DEFAULT NULL,
     status VARCHAR(50) DEFAULT 'verifying' CHECK (status IN ('verifying','process', 'shipping', 'complete', 'rejected')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
