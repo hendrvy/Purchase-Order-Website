@@ -26,3 +26,11 @@ func GetStorage() *Storage {
 	})
 	return storage
 }
+
+// seedData - Initialize storage with test data
+func seedData() {
+	// TODO: Implement seed data logic
+	// - Add initial test companies
+	// - Add initial test purchase orders
+	// - Add initial test attachments
+}
