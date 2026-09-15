@@ -114,6 +114,7 @@ func Login(c *gin.Context) {
 			Username:    user.Username,
 			CompanyName: user.CompanyName,
 			Email:       user.Email,
+			Role:        user.Role,
 		},
 	}
 
@@ -192,7 +193,7 @@ func Register(c *gin.Context) {
 	company := registReq.Company
 
 	// Validate required fields
-	if company.Username == "" || company.Password == "" || company.CompanyName == "" || company.Email == "" {
+	if company.Username == "" || company.Password == "" || company.CompanyName == "" || company.Email == "" || company.Role == "" {
 		c.JSON(http.StatusBadRequest, JsonResponse{
 			Status:  http.StatusBadRequest,
 			Message: "Missing required fields",
@@ -269,8 +270,22 @@ func Register(c *gin.Context) {
 			"company_name": company.CompanyName,
 			"email":        company.Email,
 			"phone":        company.Phone,
+			"role":         company.Role,
 		},
 	})
+}
+
+func queryInt(c *gin.Context, key string, defaultVal int) int {
+	val := c.DefaultQuery(key, "")
+	if val == "" {
+		return defaultVal
+	}
+	var result int
+	fmt.Sscanf(val, "%d", &result)
+	if result < 1 {
+		return defaultVal
+	}
+	return result
 }
 
 // ============================================================================
@@ -282,17 +297,62 @@ func GetPurchaseOrders(c *gin.Context) {
 	// TODO: Implement logic
 	// - Query all purchase orders from database
 	// - Return list with pagination support
-	c.JSON(http.StatusOK, gin.H{"message": "Get all purchase orders"})
+	var purchaseOrders []PurchaseOrder
+
+	switch c.GetString("role") {
+	case "user":
+		GetPurchaseOrdersByCompany(c)
+		return
+	}
+
+	page := queryInt(c, "page", 1)
+	limit := queryInt(c, "limit", 10)
+
+	purchaseOrders, err := GetAllPurchaseOrdersDB(page, limit)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, JsonResponse{
+			Status:  http.StatusInternalServerError,
+			Message: "Failed to retrieve purchase orders",
+			Error:   err.Error(),
+		})
+
+		return
+	}
+
+	c.JSON(http.StatusOK, JsonResponse{
+		Status:  http.StatusOK,
+		Message: "Retrieved purchase orders",
+		Data:    purchaseOrders,
+	})
 }
 
 // GetPurchaseOrderByID - Get purchase order by ID
 func GetPurchaseOrderByID(c *gin.Context) {
 	// TODO: Implement logic
-	// - Get ID from URL parameter
-	// - Query purchase order by ID
-	// - Return purchase order details
-	poID := c.Param("id")
-	c.JSON(http.StatusOK, gin.H{"message": "Get purchase order", "id": poID})
+
+	poIDstr := c.Param("id")
+	var poID uint
+
+	fmt.Sscanf(poIDstr, "%d", &poID)
+
+	purchaseOrder, err := GetPurchaseOrderByIDDB(uint(poID))
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, JsonResponse{
+			Status:  http.StatusInternalServerError,
+			Message: "Failed to retrieve purchase orders",
+			Error:   err.Error(),
+		})
+
+		return
+	}
+
+	c.JSON(http.StatusOK, JsonResponse{
+		Status:  http.StatusOK,
+		Message: "Purchase order retrieved successfully",
+		Data:    purchaseOrder,
+	})
 }
 
 // CreatePurchaseOrder - Create new purchase order
@@ -302,7 +362,34 @@ func CreatePurchaseOrder(c *gin.Context) {
 	// - Validate required fields
 	// - Create purchase order in database
 	// - Return created purchase order with ID
-	c.JSON(http.StatusCreated, gin.H{"message": "Purchase order created successfully"})
+
+	var reqpo PurchaseOrder
+
+	err := c.BindJSON(&reqpo)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, JsonResponse{
+			Status: http.StatusBadRequest,
+			Error:  "Bad Request",
+		})
+		return
+	}
+
+	errs := CreatePurchaseOrderDB(&reqpo)
+
+	if errs != nil {
+		c.JSON(http.StatusInternalServerError, JsonResponse{
+			Status:  http.StatusInternalServerError,
+			Error:   "Failed to create on DB",
+			Message: "Failed new record on purchaseorder table",
+		})
+		return
+	}
+
+	c.JSON(http.StatusCreated, JsonResponse{
+		Status:  http.StatusCreated,
+		Message: "Created Purchase order Successfully",
+	})
 }
 
 // UpdatePurchaseOrder - Update purchase order
@@ -313,8 +400,35 @@ func UpdatePurchaseOrder(c *gin.Context) {
 	// - Validate data
 	// - Update purchase order in database
 	// - Return updated purchase order
-	poID := c.Param("id")
-	c.JSON(http.StatusOK, gin.H{"message": "Purchase order updated", "id": poID})
+	poIDstr := c.Param("id")
+	var poID uint
+	var poReq PurchaseOrder
+	fmt.Sscanf(poIDstr, "%d", &poID)
+	err := c.BindJSON(&poReq)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, JsonResponse{
+			Status: http.StatusBadRequest,
+			Error:  "Bad Request",
+		})
+		return
+	}
+
+	errs := UpdatePurchaseOrderDB(poID, &poReq)
+
+	if errs != nil {
+		c.JSON(http.StatusInternalServerError, JsonResponse{
+			Status:  http.StatusInternalServerError,
+			Error:   "Failed to update on DB",
+			Message: "Failed update record on purchaseorder table",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, JsonResponse{
+		Status:  http.StatusOK,
+		Message: "Updated Purchase order Successfully",
+	})
 }
 
 // DeletePurchaseOrder - Delete purchase order
@@ -352,8 +466,27 @@ func GetPurchaseOrdersByCompany(c *gin.Context) {
 	// - Support filtering by status
 	// - Support pagination
 	// - Return list of purchase orders
-	companyID := c.Param("company_id")
-	c.JSON(http.StatusOK, gin.H{"message": "Get purchase orders by company", "company_id": companyID})
+	companyIDstr := c.Param("company_id")
+	var companyID uint
+
+	fmt.Sscanf(companyIDstr, "%d", &companyID)
+
+	PurchaseOrders, err := GetPurchaseOrdersByCompanyDB(companyID)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, JsonResponse{
+			Status:  http.StatusInternalServerError,
+			Error:   "Database Failed to return data",
+			Message: "Failed",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, JsonResponse{
+		Status:  http.StatusOK,
+		Message: "Success retrieving data",
+		Data:    PurchaseOrders,
+	})
 }
 
 // ============================================================================
