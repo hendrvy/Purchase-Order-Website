@@ -6,8 +6,17 @@ import (
 	"gorm.io/gorm"
 )
 
+type Roles string
+
+const (
+	RoleUser      Roles = "user"
+	RoleValidator Roles = "validator"
+	RoleAdmin     Roles = "admin"
+)
+
 type Company struct {
 	ID          uint           `json:"id" gorm:"primaryKey"`
+	Role        Roles          `json:"role" gorm:"type:varchar(50);not null;default:'user'" binding:"required,oneof=user validator admin"`
 	Username    string         `json:"username" binding:"required" gorm:"unique;not null"`
 	CompanyName string         `json:"company_name" binding:"required" gorm:"not null"`
 	Password    string         `json:"password,omitempty" gorm:"not null"`

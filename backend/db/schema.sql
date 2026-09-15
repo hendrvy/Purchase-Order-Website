@@ -4,8 +4,12 @@
 -- ============================================================================
 -- COMPANIES TABLE
 -- ============================================================================
+
+CREATE TYPE roles AS ENUM ('user', 'validator', 'admin');
+
 CREATE TABLE IF NOT EXISTS companies (
     id SERIAL PRIMARY KEY,
+    role roles NOT NULL DEFAULT 'user',
     username VARCHAR(255) UNIQUE NOT NULL,
     company_name VARCHAR(255) NOT NULL,
     password VARCHAR(255) NOT NULL,
