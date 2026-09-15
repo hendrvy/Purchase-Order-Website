@@ -44,6 +44,7 @@ func GenerateToken(company Company) (string, error) {
 
 	claims := jwt.MapClaims{
 		"id":       company.ID,
+		"role":     company.Role,
 		"username": company.Username,
 		"company":  company.CompanyName,
 		"email":    company.Email,

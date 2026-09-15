@@ -59,6 +59,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		c.Set("user_id", uint(claims["id"].(float64)))
 		c.Set("username", claims["username"].(string))
 		c.Set("company_name", claims["company"].(string))
+		c.Set("role", claims["role"].(string))
 
 		fmt.Printf("Auth successful for user: %s\n", claims["username"].(string))
 
