@@ -42,9 +42,9 @@ type PurchaseOrder struct {
 
 type Attachment struct {
 	ID        uint           `json:"id" gorm:"primaryKey"`
-	FileName  string         `json:"filename" gorm:"not null"`
-	FilePath  string         `json:"filepath" gorm:"not null"`
-	MimeType  string         `json:"mime_type"`
+	FileName  string         `json:"filename" gorm:"column:filename;not null"`
+	FilePath  string         `json:"filepath" gorm:"column:filepath;not null"`
+	MimeType  string         `json:"mime_type" gorm:"column:mime_type"`
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`

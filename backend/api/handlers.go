@@ -4,22 +4,72 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 var DB *gorm.DB
-var folderPath string = "/app/uploads"
+var folderPath string
+
+func init() {
+	// Load environment variables from .env file
+	godotenv.Load()
+
+	// Set default upload folder path from env or use default
+	folderPath = os.Getenv("UPLOAD_FOLDER_PATH")
+	if folderPath == "" {
+		folderPath = "/app/uploads"
+	}
+}
 
 func DBConnect() *gorm.DB {
-	var dsn string = "host=localhost user=smsadmin123 password=puderpuder123 dbname=Purchase-Order-Website port=5432 sslmode=disable"
+	// Load environment variables from .env file
+	godotenv.Load()
+
+	// Get database configuration from environment variables
+	dbHost := os.Getenv("DB_HOST")
+	if dbHost == "" {
+		dbHost = "localhost"
+	}
+
+	dbUser := os.Getenv("DB_USER")
+	if dbUser == "" {
+		dbUser = "smsadmin123"
+	}
+
+	dbPassword := os.Getenv("DB_PASSWORD")
+	if dbPassword == "" {
+		dbPassword = "puderpuder123"
+	}
+
+	dbName := os.Getenv("DB_NAME")
+	if dbName == "" {
+		dbName = "Purchase-Order-Website"
+	}
+
+	dbPort := os.Getenv("DB_PORT")
+	if dbPort == "" {
+		dbPort = "5432"
+	}
+
+	dbSSLMode := os.Getenv("DB_SSLMODE")
+	if dbSSLMode == "" {
+		dbSSLMode = "disable"
+	}
+
+	// Build DSN from environment variables
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
+		dbHost, dbUser, dbPassword, dbName, dbPort, dbSSLMode)
+
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		panic("failed to connect to database")
+		panic(fmt.Sprintf("failed to connect to database: %v", err))
 	}
 
 	DB = db
