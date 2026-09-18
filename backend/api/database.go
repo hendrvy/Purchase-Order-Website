@@ -212,6 +212,15 @@ func UpdateCompanyDB(id uint, company *Company) error {
 	// - Update company by ID
 	// - Return error if not found or failed
 	fmt.Printf("Updating company with ID: %d\n", id)
+
+	company.ID = id
+
+	result := DB.Save(company)
+
+	if result.Error != nil {
+		return result.Error
+	}
+
 	return nil
 }
 

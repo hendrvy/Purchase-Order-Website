@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"path/filepath"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -11,6 +12,7 @@ import (
 )
 
 var DB *gorm.DB
+var folderPath string = "/app/uploads"
 
 func DBConnect() *gorm.DB {
 	var dsn string = "host=localhost user=smsadmin123 password=puderpuder123 dbname=Purchase-Order-Website port=5432 sslmode=disable"
@@ -359,7 +361,9 @@ func GetPurchaseOrderByID(c *gin.Context) {
 func CreatePurchaseOrder(c *gin.Context) {
 	// TODO: Implement logic
 	// - Bind JSON request body
-	// - Validate required fields
+	// - require formfile
+	// - Validate data
+	// - upload attachment to get foreign key
 	// - Create purchase order in database
 	// - Return created purchase order with ID
 
@@ -370,18 +374,44 @@ func CreatePurchaseOrder(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, JsonResponse{
 			Status: http.StatusBadRequest,
-			Error:  "Bad Request",
+			Error:  err.Error(),
 		})
 		return
 	}
 
+	_, errfile := c.FormFile("file")
+
+	if errfile != nil {
+		c.JSON(http.StatusBadRequest, JsonResponse{
+			Status: http.StatusBadRequest,
+			Error:  "Bad Request, No File upload",
+		})
+		return
+	}
+
+	if err := ValidatePOFields(reqpo.PONumber, reqpo.Status); err != nil {
+		c.JSON(http.StatusBadRequest, JsonResponse{
+			Status:  http.StatusBadRequest,
+			Error:   err.Error(),
+			Message: "Invalid po fields",
+		})
+		return
+	}
+
+	//Ambil id foreign key ke tabel attachment
+	if fk_attachmentID, err := UploadFileAttachment(c); err != nil {
+
+	}
+
+	//assign ke body request untuk purchase order
+	reqpo.AttachmentID = fk_attachmentID
 	errs := CreatePurchaseOrderDB(&reqpo)
 
 	if errs != nil {
 		c.JSON(http.StatusInternalServerError, JsonResponse{
 			Status:  http.StatusInternalServerError,
-			Error:   "Failed to create on DB",
-			Message: "Failed new record on purchaseorder table",
+			Error:   errs.Error(),
+			Message: "Failed inserting new record on purchaseorder table",
 		})
 		return
 	}
@@ -397,8 +427,10 @@ func UpdatePurchaseOrder(c *gin.Context) {
 	// TODO: Implement logic
 	// - Get ID from URL parameter
 	// - Bind JSON request body
+	// - require formfile
 	// - Validate data
-	// - Update purchase order in database
+	// - upload attachment to get foreign key
+	// - Update purchase order in database with attachment foreign key
 	// - Return updated purchase order
 	poIDstr := c.Param("id")
 	var poID uint
@@ -438,8 +470,34 @@ func DeletePurchaseOrder(c *gin.Context) {
 	// - Soft delete purchase order from database
 	// - Delete associated attachment file
 	// - Return success message
-	poID := c.Param("id")
-	c.JSON(http.StatusOK, gin.H{"message": "Purchase order deleted", "id": poID})
+	poIDstr := c.Param("id")
+	var poID int
+	fmt.Sscanf(poIDstr, "%d", &poID)
+
+	if poID < 0 {
+		c.JSON(http.StatusBadRequest, JsonResponse{
+			Status:  http.StatusBadRequest,
+			Error:   "Bad Request",
+			Message: "Type mismatch, expected uint got value under 0",
+		})
+		return
+	}
+
+	err := DeletePurchaseOrderDB(uint(poID))
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, JsonResponse{
+			Status:  http.StatusInternalServerError,
+			Error:   "Failed to update on DB",
+			Message: "Failed delete record on purchaseorder table",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, JsonResponse{
+		Status:  http.StatusOK,
+		Message: "Deleted Purchase order Successfully",
+	})
 }
 
 // ============================================================================
@@ -454,7 +512,38 @@ func UpdatePurchaseOrderStatus(c *gin.Context) {
 	// - Validate status value (pending, processed, done)
 	// - Update status in database
 	// - Return updated purchase order
-	poID := c.Param("id")
+	poIDstr := c.Param("id")
+	var poID int
+	fmt.Sscanf(poIDstr, "%d", &poID)
+
+	if poID < 0 {
+		c.JSON(http.StatusBadRequest, JsonResponse{
+			Status:  http.StatusBadRequest,
+			Error:   "Bad Request",
+			Message: "Type mismatch, expected uint got value under 0",
+		})
+		return
+	}
+
+	var poReq PurchaseOrder
+	if err := c.BindJSON(&poReq); err != nil {
+		c.JSON(http.StatusBadRequest, JsonResponse{
+			Status:  http.StatusBadRequest,
+			Message: "Invalid request format",
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	if err := UpdatePurchaseOrderDB(uint(poID), &poReq); err != nil {
+		c.JSON(http.StatusInternalServerError, JsonResponse{
+			Status:  http.StatusInternalServerError,
+			Error:   "Failed to update on DB",
+			Message: "Failed update record on purchaseorder table",
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{"message": "Purchase order status updated", "id": poID})
 }
 
@@ -494,14 +583,46 @@ func GetPurchaseOrdersByCompany(c *gin.Context) {
 // ============================================================================
 
 // UploadFile - Upload file attachment
-func UploadFile(c *gin.Context) {
+func UploadFileAttachment(c *gin.Context) (uint, error) {
 	// TODO: Implement logic
 	// - Get file from multipart form
 	// - Validate file type and size
+	// - Generate filepath with uuid as its folder file name
 	// - Save file to storage
 	// - Create attachment record in database
 	// - Return attachment ID and file info
-	c.JSON(http.StatusCreated, gin.H{"message": "File uploaded successfully"})
+	file, err := c.FormFile("file")
+
+	if err != nil {
+		return 0, err
+	}
+
+	dst := filepath.Join(folderPath, file.Filename)
+	if err := c.SaveUploadedFile(file, dst); err != nil {
+		c.JSON(http.StatusInternalServerError, JsonResponse{
+			Status:  http.StatusInternalServerError,
+			Error:   err.Error(),
+			Message: "Failed while saving file to backend",
+		})
+	}
+
+	if err := ValidateFile(file); err != nil {
+		c.JSON(http.StatusBadRequest, JsonResponse{
+			Status:  http.StatusBadRequest,
+			Error:   err.Error(),
+			Message: "Invalid File type",
+		})
+	}
+
+	var attachment Attachment = Attachment{
+		FileName: file.Filename,
+		FilePath: GenerateUniqueFilename(file.Filename),
+		MimeType: GetMimeType(file.Filename),
+	}
+	CreateAttachmentDB()
+
+	return
+
 }
 
 // DownloadFile - Download file attachment
@@ -512,7 +633,10 @@ func DownloadFile(c *gin.Context) {
 	// - Retrieve file from storage
 	// - Return file with proper headers
 	// - Handle file not found error
-	attachmentID := c.Param("id")
+	attachmentIDstr := c.Param("id")
+	var attachmentID string
+	fmt.Sscanf(attachmentIDstr, "%d", &attachmentID)
+
 	c.JSON(http.StatusOK, gin.H{"message": "Download file", "attachment_id": attachmentID})
 }
 
