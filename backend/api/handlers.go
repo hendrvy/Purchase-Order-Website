@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -15,7 +16,7 @@ import (
 )
 
 var DB *gorm.DB
-var folderPath string
+var folderPath = "/app/uploads"
 
 func init() {
 	// Load environment variables from .env file
@@ -35,7 +36,7 @@ func DBConnect() *gorm.DB {
 	// Get database configuration from environment variables
 	dbHost := os.Getenv("DB_HOST")
 	if dbHost == "" {
-		dbHost = "localhost"
+		dbHost = "postgres"
 	}
 
 	dbUser := os.Getenv("DB_USER")
@@ -67,9 +68,25 @@ func DBConnect() *gorm.DB {
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
 		dbHost, dbUser, dbPassword, dbName, dbPort, dbSSLMode)
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	// Retry logic for database connection
+	var db *gorm.DB
+	var err error
+	maxRetries := 10
+	retryDelay := 2 * time.Second
+
+	for i := 0; i < maxRetries; i++ {
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+		if err == nil {
+			break
+		}
+		fmt.Printf("Database connection attempt %d/%d failed: %v\n", i+1, maxRetries, err)
+		if i < maxRetries-1 {
+			time.Sleep(retryDelay)
+		}
+	}
+
 	if err != nil {
-		panic(fmt.Sprintf("failed to connect to database: %v", err))
+		panic(fmt.Sprintf("failed to connect to database after %d retries: %v", maxRetries, err))
 	}
 
 	DB = db
@@ -681,7 +698,13 @@ func UploadFileAttachment(c *gin.Context) (uint, error) {
 		return 0, err
 	}
 
-	dst := filepath.Join(folderPath, file.Filename)
+	var attachment Attachment = Attachment{
+		FileName: file.Filename,
+		FilePath: GenerateUniqueFilename(file.Filename),
+		MimeType: GetMimeType(file.Filename),
+	}
+
+	dst := filepath.Join(folderPath, attachment.FilePath)
 	if err := c.SaveUploadedFile(file, dst); err != nil {
 		c.JSON(http.StatusInternalServerError, JsonResponse{
 			Status:  http.StatusInternalServerError,
@@ -698,11 +721,8 @@ func UploadFileAttachment(c *gin.Context) (uint, error) {
 		})
 	}
 
-	var attachment Attachment = Attachment{
-		FileName: file.Filename,
-		FilePath: GenerateUniqueFilename(file.Filename),
-		MimeType: GetMimeType(file.Filename),
-	}
+	fmt.Println(GenerateUniqueFilename(file.Filename))
+
 	CreateAttachmentDB(&attachment)
 
 	return attachment.ID, nil
