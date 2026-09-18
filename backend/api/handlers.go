@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"path/filepath"
@@ -360,35 +361,49 @@ func GetPurchaseOrderByID(c *gin.Context) {
 // CreatePurchaseOrder - Create new purchase order
 func CreatePurchaseOrder(c *gin.Context) {
 	// TODO: Implement logic
-	// - Bind JSON request body
+	// - Parse payload from multipart form
+	// - Unmarshal JSON from payload
+	// - Validate required fields
 	// - require formfile
-	// - Validate data
 	// - upload attachment to get foreign key
 	// - Create purchase order in database
 	// - Return created purchase order with ID
 
+	// Extract payload from multipart form
+	payloadStr := c.PostForm("payload")
+	if payloadStr == "" {
+		c.JSON(http.StatusBadRequest, JsonResponse{
+			Status:  http.StatusBadRequest,
+			Error:   "Missing payload field",
+			Message: "Failed to parse purchase order data",
+		})
+		return
+	}
+
+	// Unmarshal JSON payload into PurchaseOrder struct
 	var reqpo PurchaseOrder
-
-	err := c.BindJSON(&reqpo)
-
+	err := json.Unmarshal([]byte(payloadStr), &reqpo)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, JsonResponse{
-			Status: http.StatusBadRequest,
-			Error:  err.Error(),
+			Status:  http.StatusBadRequest,
+			Error:   "Invalid JSON in payload: " + err.Error(),
+			Message: "Failed to parse purchase order data",
 		})
 		return
 	}
 
+	// Check for file in multipart form
 	_, errfile := c.FormFile("file")
-
 	if errfile != nil {
 		c.JSON(http.StatusBadRequest, JsonResponse{
-			Status: http.StatusBadRequest,
-			Error:  "Bad Request, No File upload",
+			Status:  http.StatusBadRequest,
+			Error:   "Bad Request, No File upload",
+			Message: "File is required",
 		})
 		return
 	}
 
+	// Validate required fields
 	if err := ValidatePOFields(reqpo.PONumber, reqpo.Status); err != nil {
 		c.JSON(http.StatusBadRequest, JsonResponse{
 			Status:  http.StatusBadRequest,
@@ -398,7 +413,20 @@ func CreatePurchaseOrder(c *gin.Context) {
 		return
 	}
 
-	//Ambil id foreign key ke tabel attachment
+	// Validate CompanyID is provided and greater than 0
+	if reqpo.CompanyID == 0 {
+		c.JSON(http.StatusBadRequest, JsonResponse{
+			Status:  http.StatusBadRequest,
+			Error:   "company_id is required and must be greater than 0",
+			Message: "Invalid po fields",
+		})
+		return
+	}
+
+	// Optional fields (ResiNumber, Notes) are set to empty string if not provided
+	// No need to explicitly set them as the struct will have zero values
+
+	// Upload file and get attachment ID
 	fk_attachmentID, err := UploadFileAttachment(c)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, JsonResponse{
@@ -409,7 +437,7 @@ func CreatePurchaseOrder(c *gin.Context) {
 		return
 	}
 
-	//assign ke body request untuk purchase order
+	// Assign attachment ID to purchase order
 	reqpo.AttachmentID = fk_attachmentID
 	errs := CreatePurchaseOrderDB(&reqpo)
 
