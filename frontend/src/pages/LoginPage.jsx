@@ -4,6 +4,7 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import { useAuth } from '@/context/AuthContext.jsx'
 import { useLoginMutation } from '@/hooks/useLoginMutation.js'
+import { Button } from '@/components/ui/button.jsx'
 
 const loginSchema = z.object({
   email: z.string().min(1, 'Email wajib diisi.').email('Format email tidak valid.'),
@@ -85,13 +86,15 @@ export function LoginPage() {
             </p>
           )}
 
-          <button
+          <Button
             type="submit"
-            disabled={mutation.isPending}
-            className="w-full rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+            variant="primary"
+            size="sm"
+            isLoading={mutation.isPending}
+            className="w-full"
           >
-            {mutation.isPending ? 'Memproses...' : 'Masuk'}
-          </button>
+            Login
+          </Button>
         </form>
       </div>
     </div>
