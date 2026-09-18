@@ -399,8 +399,14 @@ func CreatePurchaseOrder(c *gin.Context) {
 	}
 
 	//Ambil id foreign key ke tabel attachment
-	if fk_attachmentID, err := UploadFileAttachment(c); err != nil {
-
+	fk_attachmentID, err := UploadFileAttachment(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, JsonResponse{
+			Status:  http.StatusInternalServerError,
+			Error:   err.Error(),
+			Message: "Failed to upload attachment",
+		})
+		return
 	}
 
 	//assign ke body request untuk purchase order
@@ -619,10 +625,28 @@ func UploadFileAttachment(c *gin.Context) (uint, error) {
 		FilePath: GenerateUniqueFilename(file.Filename),
 		MimeType: GetMimeType(file.Filename),
 	}
-	CreateAttachmentDB()
+	CreateAttachmentDB(&attachment)
 
-	return
+	return attachment.ID, nil
 
+}
+
+// UploadFile - Wrapper for uploading files
+func UploadFile(c *gin.Context) {
+	attachmentID, err := UploadFileAttachment(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, JsonResponse{
+			Status:  http.StatusInternalServerError,
+			Error:   err.Error(),
+			Message: "Failed to upload file",
+		})
+		return
+	}
+	c.JSON(http.StatusCreated, JsonResponse{
+		Status:  http.StatusCreated,
+		Message: "File uploaded successfully",
+		Data:    map[string]uint{"attachment_id": attachmentID},
+	})
 }
 
 // DownloadFile - Download file attachment
