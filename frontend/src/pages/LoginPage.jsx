@@ -42,61 +42,120 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-sm rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-        <h1 className="text-lg font-semibold text-gray-900">Masuk</h1>
-        <p className="mt-1 text-sm text-gray-500">Masuk untuk mengelola purchase order Anda.</p>
+  <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gray-50 px-4">
 
-        <form className="mt-6 space-y-4" onSubmit={handleSubmit(onSubmit)} noValidate>
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-              {...register('email')}
-            />
-            {errors.email && (
-              <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>
-            )}
-          </div>
+    {/* Background blur decorations */}
+    <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full bg-[#D97745]/30 blur-[120px]" />
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-              {...register('password')}
-            />
-            {errors.password && (
-              <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>
-            )}
-          </div>
+    <div className="absolute top-1/3 -right-32 h-96 w-96 rounded-full bg-[#D97745]/25 blur-[120px]" />
 
-          {mutation.isError && (
-            <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">
-              {mutation.error?.message ?? 'Gagal masuk. Coba lagi.'}
+    <div className="absolute -bottom-40 left-1/3 h-96 w-96 rounded-full bg-[#4A4341]/20 blur-[120px]" />
+
+
+    {/* Login Content */}
+    <div className="relative z-10 w-full max-w-md rounded-lg p-6">
+
+      {/* Header */}
+      <div className="text-center">
+        <h1 className="text-5xl font-semibold tracking-wider text-[#4A4141]">
+          Welcome to <br />
+          SMS ORDER
+        </h1>
+
+        <p className="mt-2 text-sm text-gray-500">
+          Login to Continue..
+        </p>
+      </div>
+
+
+      {/* Login Form */}
+      <form
+        className="mt-8 space-y-5"
+        onSubmit={handleSubmit(onSubmit)}
+        noValidate
+      >
+
+        {/* Email */}
+        <div>
+          <label
+            htmlFor="email"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Email
+          </label>
+
+          <input
+            id="email"
+            type="email"
+            autoComplete="email"
+            className="mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-[#D97745] focus:outline-none focus:ring-1 focus:ring-[#D97745]"
+            {...register('email')}
+          />
+
+          {errors.email && (
+            <p className="mt-1 text-xs text-red-600">
+              {errors.email.message}
             </p>
           )}
+        </div>
 
-          <Button
-            type="submit"
-            variant="primary"
-            size="sm"
-            isLoading={mutation.isPending}
-            className="w-full"
+
+        {/* Password */}
+        <div>
+          <label
+            htmlFor="password"
+            className="block text-sm font-medium text-gray-700"
           >
-            Login
-          </Button>
-        </form>
-      </div>
+            Password
+          </label>
+
+          <input
+            id="password"
+            type="password"
+            autoComplete="current-password"
+            className="mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-[#D97745] focus:outline-none focus:ring-1 focus:ring-[#D97745]"
+            {...register('password')}
+          />
+
+          {/* Forgot Password */}
+          <div className="mt-2 flex justify-end">
+            <a
+              href="#"
+              className="text-xs text-gray-500 transition-colors hover:text-[#D97745]"
+            >
+              Forgot Password?
+            </a>
+          </div>
+
+          {errors.password && (
+            <p className="mt-1 text-xs text-red-600">
+              {errors.password.message}
+            </p>
+          )}
+        </div>
+
+
+        {/* Error */}
+        {mutation.isError && (
+          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">
+            {mutation.error?.message ?? 'Gagal masuk. Coba lagi.'}
+          </p>
+        )}
+
+
+        {/* Login Button */}
+        <Button
+          type="submit"
+          variant="primary"
+          size="sm"
+          isLoading={mutation.isPending}
+          className="w-full"
+        >
+          Login
+        </Button>
+
+      </form>
     </div>
-  )
+  </div>
+)
 }
