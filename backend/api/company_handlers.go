@@ -7,20 +7,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// InsertCompany - Insert a new company (legacy endpoint)
-func InsertCompany(c *gin.Context) {
-	var companyReq CompanyRequest
-	if err := c.BindJSON(&companyReq); err != nil {
-		c.JSON(400, gin.H{"error": "not a Company data request"})
-		return
-	}
-
-	if companyReq.Company.CompanyName != "" {
-		c.JSON(200, gin.H{"message": "Company data acquired \n" + companyReq.Company.CompanyName})
-		return
-	}
-}
-
 // GetCompanyByID - Get company profile by ID
 func GetCompanyByID(c *gin.Context) {
 	companyIDstr := c.Param("id")

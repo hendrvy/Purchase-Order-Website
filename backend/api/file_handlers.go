@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -102,6 +103,40 @@ func UploadFileAttachmentWithPath(c *gin.Context) (uint, string, error) {
 	}
 
 	return attachment.ID, dst, nil
+}
+
+// UploadMultipleAttachmentsForPO - Upload multiple files and return created Attachment records
+// plus the disk paths written, so callers can roll back (delete files) if a
+// later step (e.g. DB insert of the purchase order) fails.
+func UploadMultipleAttachmentsForPO(c *gin.Context, files []*multipart.FileHeader) ([]Attachment, []string, error) {
+	var attachments []Attachment
+	var filePaths []string
+
+	for _, file := range files {
+		if err := ValidateFile(file); err != nil {
+			return attachments, filePaths, err
+		}
+
+		attachment := Attachment{
+			FileName: file.Filename,
+			FilePath: GenerateUniqueFilename(file.Filename),
+			MimeType: GetMimeType(file.Filename),
+		}
+
+		dst := filepath.Join(folderPath, attachment.FilePath)
+		if err := c.SaveUploadedFile(file, dst); err != nil {
+			return attachments, filePaths, fmt.Errorf("failed to save file %s: %w", file.Filename, err)
+		}
+		filePaths = append(filePaths, dst)
+
+		if err := CreateAttachmentDB(&attachment); err != nil {
+			return attachments, filePaths, fmt.Errorf("failed to create attachment record for %s: %w", file.Filename, err)
+		}
+
+		attachments = append(attachments, attachment)
+	}
+
+	return attachments, filePaths, nil
 }
 
 // UploadFile - Wrapper for uploading single file

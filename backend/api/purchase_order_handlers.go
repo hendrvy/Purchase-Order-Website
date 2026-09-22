@@ -84,7 +84,7 @@ func GetPurchaseOrderByID(c *gin.Context) {
 	})
 }
 
-// CreatePurchaseOrder - Create new purchase order with file attachment
+// CreatePurchaseOrder - Create new purchase order with one or more file attachments
 func CreatePurchaseOrder(c *gin.Context) {
 	// Extract payload from multipart form
 	payloadStr := c.PostForm("payload")
@@ -109,17 +109,6 @@ func CreatePurchaseOrder(c *gin.Context) {
 		return
 	}
 
-	// Check for file in multipart form
-	_, errfile := c.FormFile("file")
-	if errfile != nil {
-		c.JSON(http.StatusBadRequest, JsonResponse{
-			Status:  http.StatusBadRequest,
-			Error:   "Bad Request, No File upload",
-			Message: "File is required",
-		})
-		return
-	}
-
 	form, err := c.MultipartForm()
 	if err != nil {
 		c.JSON(http.StatusBadRequest, JsonResponse{
@@ -130,18 +119,27 @@ func CreatePurchaseOrder(c *gin.Context) {
 		return
 	}
 
-	files := form.File["file"]
-	if len(files) > 1 {
+	files := form.File["files"]
+	if len(files) == 0 {
 		c.JSON(http.StatusBadRequest, JsonResponse{
 			Status:  http.StatusBadRequest,
-			Error:   "Only one file allowed per purchase order",
-			Message: "Multiple files not supported",
+			Error:   "Bad Request, No File upload",
+			Message: "At least one file is required",
+		})
+		return
+	}
+
+	if len(files) > MaxAttachmentsPerPO {
+		c.JSON(http.StatusBadRequest, JsonResponse{
+			Status:  http.StatusBadRequest,
+			Error:   fmt.Sprintf("Too many files. Maximum %d files allowed", MaxAttachmentsPerPO),
+			Message: "File limit exceeded",
 		})
 		return
 	}
 
 	// Validate required fields
-	if err := ValidatePOFields(reqpo.PONumber, reqpo.Status); err != nil {
+	if err := ValidatePOCreateFields(reqpo.PONumber, reqpo.Title, reqpo.TotalAmount, reqpo.Status); err != nil {
 		c.JSON(http.StatusBadRequest, JsonResponse{
 			Status:  http.StatusBadRequest,
 			Error:   err.Error(),
@@ -168,21 +166,26 @@ func CreatePurchaseOrder(c *gin.Context) {
 		return
 	}
 
-	fk_attachmentID, filePath, err := UploadFileAttachmentWithPath(c)
+	attachments, filePaths, err := UploadMultipleAttachmentsForPO(c, files)
 	if err != nil {
+		for _, path := range filePaths {
+			os.Remove(path)
+		}
 		c.JSON(http.StatusInternalServerError, JsonResponse{
 			Status:  http.StatusInternalServerError,
 			Error:   err.Error(),
-			Message: "Failed to upload attachment",
+			Message: "Failed to upload attachments",
 		})
 		return
 	}
 
-	reqpo.AttachmentID = fk_attachmentID
+	reqpo.Attachments = attachments
 	errs := CreatePurchaseOrderDB(&reqpo)
 
 	if errs != nil {
-		os.Remove(filePath)
+		for _, path := range filePaths {
+			os.Remove(path)
+		}
 		c.JSON(http.StatusInternalServerError, JsonResponse{
 			Status:  http.StatusInternalServerError,
 			Error:   errs.Error(),
@@ -194,6 +197,7 @@ func CreatePurchaseOrder(c *gin.Context) {
 	c.JSON(http.StatusCreated, JsonResponse{
 		Status:  http.StatusCreated,
 		Message: "Created Purchase order Successfully",
+		Data:    reqpo,
 	})
 }
 

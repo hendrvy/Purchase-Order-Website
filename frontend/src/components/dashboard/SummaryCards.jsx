@@ -5,13 +5,13 @@ import { Card, CardContent } from '@/components/ui/card.jsx'
  */
 
 /**
- * Counts how many orders are currently in processing or shipping status
+ * Counts how many orders are currently in process or shipping status
  * (i.e. approved and actively being fulfilled).
  *
  * @param {PurchaseOrder[]} orders
  */
 function countInProgress(orders) {
-  return orders.filter((order) => order.status === 'processing' || order.status === 'shipping')
+  return orders.filter((order) => order.status === 'process' || order.status === 'shipping')
     .length
 }
 
@@ -24,7 +24,7 @@ function countCompletedThisMonth(orders) {
   const now = new Date()
 
   return orders.filter((order) => {
-    if (order.status !== 'completed') return false
+    if (order.status !== 'complete') return false
     const updatedAt = new Date(order.updated_at)
     return (
       updatedAt.getMonth() === now.getMonth() && updatedAt.getFullYear() === now.getFullYear()
@@ -33,13 +33,14 @@ function countCompletedThisMonth(orders) {
 }
 
 /**
- * Counts orders that need the buyer's attention: drafts not yet submitted,
- * or rejected orders that may need revision/resubmission.
+ * Counts orders that need attention: still awaiting verification, or
+ * rejected orders that may need revision/resubmission.
  *
  * @param {PurchaseOrder[]} orders
  */
 function countNeedsAction(orders) {
-  return orders.filter((order) => order.status === 'draft' || order.status === 'rejected').length
+  return orders.filter((order) => order.status === 'verifying' || order.status === 'rejected')
+    .length
 }
 
 /**

@@ -6,16 +6,15 @@ import { apiClient, ApiError } from '@/api/client.js'
 import { MOCK_ACCOUNTS } from '@/mocks/data.js'
 
 /**
- * Fase 1 is built against a mock auth layer because the real backend
- * (Go/Gin) currently expects username+company credentials and returns a
- * hardcoded token, not the email/role-based User contract documented in
- * src/types/user.js. Set VITE_USE_MOCKS=false once the backend contract
- * is aligned to switch to the real POST /api/login call below.
+ * Set VITE_USE_MOCKS=true in .env to develop against the mock accounts in
+ * src/mocks/data.js without a running backend. Defaults to false (real
+ * API) now that the frontend/backend contract is aligned (username-based
+ * login, see backend/api/auth_handlers.go Login).
  *
  * @returns {boolean}
  */
 function shouldUseMocks() {
-  return import.meta.env.VITE_USE_MOCKS !== 'false'
+  return import.meta.env.VITE_USE_MOCKS === 'true'
 }
 
 /**
@@ -34,15 +33,11 @@ async function mockLogin(credentials) {
   await delay(500)
 
   const account = MOCK_ACCOUNTS.find(
-    (item) => item.email.toLowerCase() === credentials.email.toLowerCase(),
+    (item) => item.username.toLowerCase() === credentials.username.toLowerCase(),
   )
 
   if (!account || account.password !== credentials.password) {
-    throw new ApiError('Email atau password salah.', { status: 401 })
-  }
-
-  if (!account.user.is_active) {
-    throw new ApiError('Akun Anda tidak aktif. Hubungi administrator.', { status: 403 })
+    throw new ApiError('Username atau password salah.', { status: 401 })
   }
 
   return {
@@ -52,6 +47,10 @@ async function mockLogin(credentials) {
 }
 
 /**
+ * Real backend returns `{ token, company }` (see LoginResponse in
+ * backend/api/models.go), so we remap `company` -> `user` here to keep the
+ * rest of the frontend (AuthContext, storage, User typedef) backend-agnostic.
+ *
  * @param {LoginCredentials} credentials
  * @returns {Promise<LoginResult>}
  */
@@ -61,5 +60,6 @@ export async function login(credentials) {
   }
 
   const response = await apiClient.post('/api/login', credentials)
-  return response.data
+  const { token, company } = response.data.data
+  return { token, user: company }
 }

@@ -8,17 +8,16 @@ import { getStoredUser } from '@/lib/storage.js'
 import { MOCK_PURCHASE_ORDERS } from '@/mocks/po.js'
 
 /**
- * The real backend doesn't have PO creation, file upload, `notes`, or
- * `total_amount` support yet (see backend/api/models.go - PurchaseOrder
- * only has po_number/company_id/attachment_id/resi_number/status). Build
- * against a mock layer until the backend contract catches up, same
- * pattern as src/api/auth.js. Set VITE_USE_MOCKS=false to switch over
- * once the real POST /api/purchase-orders endpoint exists.
+ * Set VITE_USE_MOCKS=true in .env to develop against the in-memory mock
+ * PO list in src/mocks/po.js without a running backend. Defaults to false
+ * (real API) now that backend/api/purchase_order_handlers.go
+ * CreatePurchaseOrder supports title/total_amount and multiple file
+ * attachments.
  *
  * @returns {boolean}
  */
 function shouldUseMocks() {
-  return import.meta.env.VITE_USE_MOCKS !== 'false'
+  return import.meta.env.VITE_USE_MOCKS === 'true'
 }
 
 /**
@@ -36,15 +35,12 @@ let mockSequence = MOCK_PURCHASE_ORDERS.length + 1
  */
 function buildMockAttachments(files) {
   return files.map((file, index) => ({
-    id: `att-${Date.now()}-${index}`,
-    po_id: '',
-    uploaded_by: getStoredUser()?.id ?? 'unknown',
-    original_filename: file.name,
+    id: Date.now() + index,
+    filename: file.name,
     // In the mock layer we keep a local blob URL just so a preview/detail
-    // page could display it; the real backend will return a server URL.
-    url: URL.createObjectURL(file),
+    // page could display it; the real backend returns a server file path.
+    filepath: URL.createObjectURL(file),
     mime_type: file.type,
-    file_size: file.size,
     created_at: new Date().toISOString(),
   }))
 }
@@ -74,26 +70,20 @@ async function mockCreatePurchaseOrder(input) {
   const now = new Date().toISOString()
   const sequence = mockSequence++
 
-  const attachments = buildMockAttachments(input.attachments)
-
   /** @type {PurchaseOrder} */
   const newOrder = {
-    id: `po-${1000 + sequence}`,
+    id: 1000 + sequence,
     po_number: `PO-${new Date().getFullYear()}-${String(1000 + sequence).padStart(4, '0')}`,
-    requester_id: user?.id ?? 'unknown',
-    requester_name: user?.full_name ?? 'Unknown',
+    company_id: user?.id ?? 0,
     title: input.title.trim(),
-    notes: input.notes?.trim() || undefined,
     total_amount: input.total_amount,
-    status: 'draft',
+    notes: input.notes?.trim() || '',
+    resi_number: '',
+    status: 'verifying',
+    attachments: buildMockAttachments(input.attachments),
     created_at: now,
     updated_at: now,
-    resi_number: '',
   }
-
-  attachments.forEach((attachment) => {
-    attachment.po_id = newOrder.id
-  })
 
   // Keep the in-memory mock list in sync so dashboard/history pages that
   // read MOCK_PURCHASE_ORDERS immediately reflect the new PO.
@@ -103,6 +93,14 @@ async function mockCreatePurchaseOrder(input) {
 }
 
 /**
+ * Creates a purchase order against the real backend. The backend expects
+ * a multipart form with a `payload` field (JSON string of the PO fields)
+ * plus one or more files under the `files` field (see
+ * backend/api/purchase_order_handlers.go CreatePurchaseOrder).
+ *
+ * `po_number` is generated client-side for now since the backend has no
+ * auto-numbering endpoint yet.
+ *
  * @param {CreatePOInput} input
  * @returns {Promise<PurchaseOrder>}
  */
@@ -111,16 +109,43 @@ export async function createPurchaseOrder(input) {
     return mockCreatePurchaseOrder(input)
   }
 
+  const user = getStoredUser()
+
+  const payload = {
+    po_number: input.po_number ?? `PO-${Date.now()}`,
+    company_id: user?.id,
+    title: input.title,
+    total_amount: input.total_amount,
+    notes: input.notes ?? '',
+  }
+
   const formData = new FormData()
-  formData.append('title', input.title)
-  formData.append('total_amount', String(input.total_amount))
-  if (input.notes) formData.append('notes', input.notes)
+  formData.append('payload', JSON.stringify(payload))
   for (const file of input.attachments) {
-    formData.append('attachments', file)
+    formData.append('files', file)
   }
 
   const response = await apiClient.post('/api/purchase-orders', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
-  return response.data
+  return response.data.data
+}
+
+/**
+ * Fetches purchase orders visible to the logged-in user. The backend
+ * applies role-based filtering server-side: `user` role only sees their
+ * own company's POs, `validator`/`admin` see all (paginated).
+ *
+ * @param {{ page?: number, limit?: number }} [options]
+ * @returns {Promise<PurchaseOrder[]>}
+ */
+export async function getPurchaseOrders(options = {}) {
+  if (shouldUseMocks()) {
+    await delay(300)
+    return MOCK_PURCHASE_ORDERS
+  }
+
+  const { page = 1, limit = 100 } = options
+  const response = await apiClient.get('/api/purchase-orders', { params: { page, limit } })
+  return response.data.data ?? []
 }

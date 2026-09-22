@@ -17,40 +17,30 @@
  * @type {Record<POStatus, StatusConfigEntry>}
  */
 export const statusConfig = {
-  draft: {
-    label: 'Draft',
-    textClass: 'text-status-draft',
-    bgClass: 'bg-status-draft-bg',
+  verifying: {
+    label: 'Verifying',
+    textClass: 'text-status-verifying',
+    bgClass: 'bg-status-verifying-bg',
   },
-  verification: {
-    label: 'Verification',
-    textClass: 'text-status-verification',
-    bgClass: 'bg-status-verification-bg',
-  },
-  processing: {
+  process: {
     label: 'Processing',
-    textClass: 'text-status-processing',
-    bgClass: 'bg-status-processing-bg',
+    textClass: 'text-status-process',
+    bgClass: 'bg-status-process-bg',
   },
   shipping: {
     label: 'Shipping',
     textClass: 'text-status-shipping',
     bgClass: 'bg-status-shipping-bg',
   },
-  completed: {
-    label: 'Completed',
-    textClass: 'text-status-completed',
-    bgClass: 'bg-status-completed-bg',
+  complete: {
+    label: 'Complete',
+    textClass: 'text-status-complete',
+    bgClass: 'bg-status-complete-bg',
   },
   rejected: {
     label: 'Rejected',
     textClass: 'text-status-rejected',
     bgClass: 'bg-status-rejected-bg',
-  },
-  cancelled: {
-    label: 'Cancelled',
-    textClass: 'text-status-cancelled',
-    bgClass: 'bg-status-cancelled-bg',
   },
 }
 
@@ -65,30 +55,25 @@ export function getStatusConfig(status) {
 /**
  * Which roles are allowed to move a PO from a given status to a given
  * target status. Used to drive UI (enable/disable actions) - the backend
- * remains the source of truth for enforcement.
+ * remains the source of truth for enforcement (only validator/admin can
+ * call PUT /api/purchase-orders/:id/status, see
+ * backend/api/purchase_order_handlers.go UpdatePurchaseOrderStatus).
  *
  * @type {Record<POStatus, Partial<Record<POStatus, readonly Role[]>>>}
  */
 const TRANSITION_RULES = {
-  draft: {
-    verification: ['buyer', 'admin'],
-    cancelled: ['buyer', 'admin'],
+  verifying: {
+    process: ['validator', 'admin'],
+    rejected: ['validator', 'admin'],
   },
-  verification: {
-    processing: ['approver', 'admin'],
-    rejected: ['approver', 'admin'],
-    cancelled: ['buyer', 'admin'],
-  },
-  processing: {
-    shipping: ['approver', 'admin'],
-    cancelled: ['admin'],
+  process: {
+    shipping: ['validator', 'admin'],
   },
   shipping: {
-    completed: ['approver', 'admin'],
+    complete: ['validator', 'admin'],
   },
-  completed: {},
+  complete: {},
   rejected: {},
-  cancelled: {},
 }
 
 /**

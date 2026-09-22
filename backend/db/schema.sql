@@ -52,23 +52,19 @@ CREATE TABLE IF NOT EXISTS purchase_orders (
     id SERIAL PRIMARY KEY,
     po_number VARCHAR(50) UNIQUE NOT NULL,
     company_id INTEGER NOT NULL,
-    attachment_id INTEGER NOT NULL,
+    title VARCHAR(150) NOT NULL,
+    total_amount NUMERIC(15, 2) NOT NULL DEFAULT 0,
     resi_number VARCHAR(30) DEFAULT NULL,
     notes VARCHAR(255) DEFAULT NULL,
     status VARCHAR(50) DEFAULT 'verifying' CHECK (status IN ('verifying','process', 'shipping', 'complete', 'rejected')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP,  -- NULL = active, timestamp = soft deleted
-    
+
     -- Foreign key constraints (NO CASCADE - prevents accidental deletion)
-    CONSTRAINT fk_purchase_orders_company 
-        FOREIGN KEY (company_id) 
-        REFERENCES companies(id) 
-        ON DELETE RESTRICT,
-    
-    CONSTRAINT fk_purchase_orders_attachment 
-        FOREIGN KEY (attachment_id) 
-        REFERENCES attachments(id) 
+    CONSTRAINT fk_purchase_orders_company
+        FOREIGN KEY (company_id)
+        REFERENCES companies(id)
         ON DELETE RESTRICT
 );
 
@@ -83,6 +79,30 @@ CREATE INDEX IF NOT EXISTS idx_purchase_orders_status ON purchase_orders(status)
 
 -- Composite index for common query: find POs for a specific company with a specific status
 CREATE INDEX IF NOT EXISTS idx_purchase_orders_company_status ON purchase_orders(company_id, status) WHERE deleted_at IS NULL;
+
+-- ============================================================================
+-- PURCHASE_ORDER_ATTACHMENTS TABLE (many-to-many join table)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS purchase_order_attachments (
+    purchase_order_id INTEGER NOT NULL,
+    attachment_id INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (purchase_order_id, attachment_id),
+
+    CONSTRAINT fk_poa_purchase_order
+        FOREIGN KEY (purchase_order_id)
+        REFERENCES purchase_orders(id)
+        ON DELETE RESTRICT,
+
+    CONSTRAINT fk_poa_attachment
+        FOREIGN KEY (attachment_id)
+        REFERENCES attachments(id)
+        ON DELETE RESTRICT
+);
+
+CREATE INDEX IF NOT EXISTS idx_poa_purchase_order_id ON purchase_order_attachments(purchase_order_id);
+CREATE INDEX IF NOT EXISTS idx_poa_attachment_id ON purchase_order_attachments(attachment_id);
 
 -- ============================================================================
 -- HELPER FUNCTIONS

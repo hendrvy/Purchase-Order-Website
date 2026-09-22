@@ -7,8 +7,8 @@ import { useAuth } from '@/context/AuthContext.jsx'
 
 /**
  * Guards nested routes: redirects to /login when not authenticated, and
- * optionally enforces a role allow-list (used from Fase 2+ for
- * approver/admin-only routes).
+ * optionally enforces a role allow-list (used for validator/admin-only
+ * routes).
  *
  * @param {{ allowedRoles?: readonly Role[] }} props
  */

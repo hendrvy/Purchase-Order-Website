@@ -8,7 +8,7 @@ import (
 func GetAllPurchaseOrdersDB(page int, limit int) ([]PurchaseOrder, error) {
 	var purchaseOrder []PurchaseOrder
 
-	result := DB.Where("deleted_at IS NULL").Offset(page - 1).Limit(limit).Find(&purchaseOrder)
+	result := DB.Preload("Attachments").Where("deleted_at IS NULL").Offset((page - 1) * limit).Limit(limit).Find(&purchaseOrder)
 
 	if result.Error != nil {
 		return nil, result.Error
@@ -19,14 +19,11 @@ func GetAllPurchaseOrdersDB(page int, limit int) ([]PurchaseOrder, error) {
 
 // GetPurchaseOrderByIDDB - Get purchase order by ID from database
 func GetPurchaseOrderByIDDB(id uint) (*PurchaseOrder, error) {
-	// TODO: Implement logic
-	// - Query purchase order by ID
-	// - Return purchase order or error if not found
 	fmt.Printf("Getting purchase order with ID: %d\n", id)
 
 	var poByID PurchaseOrder
 
-	result := DB.First(&poByID, id)
+	result := DB.Preload("Attachments").First(&poByID, id)
 
 	if result.Error != nil {
 		return nil, result.Error
@@ -90,7 +87,7 @@ func GetPurchaseOrdersByCompanyDB(companyID uint) ([]PurchaseOrder, error) {
 	fmt.Printf("Getting purchase orders for company ID: %d\n", companyID)
 
 	var poByCompany []PurchaseOrder
-	result := DB.Where("company_id = ? AND deleted_at IS NULL", companyID).Find(&poByCompany)
+	result := DB.Preload("Attachments").Where("company_id = ? AND deleted_at IS NULL", companyID).Find(&poByCompany)
 
 	if result.Error != nil {
 		return nil, result.Error
@@ -296,7 +293,10 @@ func GetPurchaseOrderOwner(poID uint) (uint, error) {
 
 func GetFileOwner(attachmentID uint) (uint, error) {
 	var po PurchaseOrder
-	result := DB.Model(&PurchaseOrder{}).Where("attachment_id = ? AND deleted_at IS NULL", attachmentID).First(&po)
+	result := DB.Model(&PurchaseOrder{}).
+		Joins("JOIN purchase_order_attachments poa ON poa.purchase_order_id = purchase_orders.id").
+		Where("poa.attachment_id = ? AND purchase_orders.deleted_at IS NULL", attachmentID).
+		First(&po)
 	if result.Error != nil {
 		return 0, result.Error
 	}
@@ -306,7 +306,11 @@ func GetFileOwner(attachmentID uint) (uint, error) {
 // GetPOIDFromAttachment - Get purchase order ID from attachment ID
 func GetPOIDFromAttachment(attachmentID uint) (uint, error) {
 	var po PurchaseOrder
-	result := DB.Model(&PurchaseOrder{}).Select("id").Where("attachment_id = ? AND deleted_at IS NULL", attachmentID).First(&po)
+	result := DB.Model(&PurchaseOrder{}).
+		Select("purchase_orders.id").
+		Joins("JOIN purchase_order_attachments poa ON poa.purchase_order_id = purchase_orders.id").
+		Where("poa.attachment_id = ? AND purchase_orders.deleted_at IS NULL", attachmentID).
+		First(&po)
 	if result.Error != nil {
 		return 0, result.Error
 	}

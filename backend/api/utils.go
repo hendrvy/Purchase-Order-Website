@@ -14,7 +14,8 @@ import (
 // ============================================================================
 
 const (
-	MaxFileSize = 5 * 1024 * 1024 // 5MB
+	MaxFileSize         = 5 * 1024 * 1024 // 5MB
+	MaxAttachmentsPerPO = 10              // Maximum attachments allowed per purchase order
 )
 
 var (
@@ -127,6 +128,23 @@ func ValidatePOFields(poNumber string, status string) error {
 		if !isValid {
 			return fmt.Errorf("invalid status '%s'. Allowed values: verifying, process, shipping, complete, rejected", status)
 		}
+	}
+
+	return nil
+}
+
+// ValidatePOCreateFields - Validate fields required when creating a purchase order
+func ValidatePOCreateFields(poNumber string, title string, totalAmount float64, status string) error {
+	if err := ValidatePOFields(poNumber, status); err != nil {
+		return err
+	}
+
+	if title == "" {
+		return fmt.Errorf("title is required")
+	}
+
+	if totalAmount <= 0 {
+		return fmt.Errorf("total_amount is required and must be greater than 0")
 	}
 
 	return nil

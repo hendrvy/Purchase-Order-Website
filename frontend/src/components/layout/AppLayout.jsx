@@ -82,13 +82,13 @@ export function AppLayout() {
 
             {/* Avatar */}
             <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gray-200 text-sm font-semibold text-gray-700">
-              {user?.full_name?.charAt(0).toUpperCase()}
+              {user?.company_name?.charAt(0).toUpperCase()}
             </div>
 
             {/* User Info */}
             <div className="flex-1 overflow-hidden">
               <p className="truncate text-sm font-medium text-gray-900">
-                {user?.full_name}
+                {user?.company_name}
               </p>
 
               <p className="text-xs text-gray-500">

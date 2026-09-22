@@ -28,16 +28,18 @@ type Company struct {
 }
 
 type PurchaseOrder struct {
-	ID           uint           `json:"id" gorm:"primaryKey"`
-	PONumber     string         `json:"po_number" gorm:"not null"`
-	CompanyID    uint           `json:"company_id" gorm:"not null"`
-	AttachmentID uint           `json:"attachment_id" gorm:"not null"`
-	ResiNumber   string         `json:"resi_number"`
-	Notes        string         `json:"notes"`
-	Status       string         `json:"status" gorm:"default:verifying"`
-	CreatedAt    time.Time      `json:"created_at"`
-	UpdatedAt    time.Time      `json:"updated_at"`
-	DeletedAt    gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
+	ID          uint           `json:"id" gorm:"primaryKey"`
+	PONumber    string         `json:"po_number" gorm:"not null"`
+	CompanyID   uint           `json:"company_id" gorm:"not null"`
+	Title       string         `json:"title" gorm:"not null"`
+	TotalAmount float64        `json:"total_amount" gorm:"not null;default:0"`
+	ResiNumber  string         `json:"resi_number"`
+	Notes       string         `json:"notes"`
+	Status      string         `json:"status" gorm:"default:verifying"`
+	Attachments []Attachment   `json:"attachments,omitempty" gorm:"many2many:purchase_order_attachments;"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
+	DeletedAt   gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
 }
 
 type Attachment struct {
@@ -48,6 +50,13 @@ type Attachment struct {
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
+}
+
+// PurchaseOrderAttachment - Join table linking purchase orders to their attachments (many-to-many)
+type PurchaseOrderAttachment struct {
+	PurchaseOrderID uint      `json:"purchase_order_id" gorm:"primaryKey"`
+	AttachmentID    uint      `json:"attachment_id" gorm:"primaryKey"`
+	CreatedAt       time.Time `json:"created_at"`
 }
 
 type HelloRequest struct {
@@ -90,15 +99,6 @@ type JsonResponse struct {
 	Message string      `json:"message"`
 	Data    interface{} `json:"data,omitempty"`
 	Error   string      `json:"error,omitempty"`
-}
-
-type POStatusUpdate struct {
-	Status string `json:"status" binding:"required,oneof=pending processed done"`
-	Notes  string `json:"notes"`
-}
-
-type CompanyRequest struct {
-	Company Company `json:"company" binding:"required"`
 }
 
 type DownloadLog struct {
