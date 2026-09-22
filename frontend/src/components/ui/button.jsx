@@ -1,3 +1,5 @@
+import { cn } from '@/lib/utils.js'
+
 export function Button({
     children,
     variant = "primary",
@@ -26,17 +28,12 @@ export function Button({
             type={type}
             onClick={onClick}
             disabled={isLoading || disabled}
-            className={`
-                w-[200px]
-                rounded-[27px]
-                font-medium
-                transition
-                disabled:opacity-50
-                disabled:cursor-not-allowed
-                ${variants[variant]}
-                ${sizes[size]}
-                ${className}
-            `}
+            className={cn(
+                "w-[200px] rounded-[27px] font-medium transition disabled:cursor-not-allowed disabled:opacity-50",
+                variants[variant],
+                sizes[size],
+                className,
+            )}
         >
             {isLoading ? "Loading..." : children}
         </button>

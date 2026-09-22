@@ -75,9 +75,10 @@ export const TERMINAL_PO_STATUSES = ['completed', 'rejected', 'cancelled']
 /**
  * @typedef {Object} CreatePOInput
  * @property {string} title
+ * @property {number} total_amount
  * @property {string} [notes]
  * @property {string} [needed_by]
- * @property {Array<Pick<PurchaseOrderLineItem, 'description' | 'quantity' | 'unit_price'>>} items
+ * @property {File[]} attachments - Images and/or PDFs supporting the request.
  */
 
 /**
