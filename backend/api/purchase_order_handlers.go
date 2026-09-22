@@ -260,7 +260,7 @@ func UpdatePurchaseOrder(c *gin.Context) {
 	if errs != nil {
 		c.JSON(http.StatusNotFound, JsonResponse{
 			Status:  http.StatusNotFound,
-			Error:   err.Error(),
+			Error:   errs.Error(),
 			Message: "Purchase order not found",
 		})
 		return
