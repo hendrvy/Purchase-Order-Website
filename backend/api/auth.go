@@ -7,14 +7,18 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
 )
-
-var SecretKey []byte = []byte(os.Getenv("SECRET_KEY"))
 
 // ============================================================================
 // PASSWORD HASHING & VERIFICATION
 // ============================================================================
+
+func LoadSecretKey() []byte {
+	godotenv.Load()
+	return []byte(os.Getenv("SECRET_KEY"))
+}
 
 // HashPassword - Hash password menggunakan bcrypt
 func HashPassword(password string) (string, error) {
@@ -38,6 +42,7 @@ func VerifyPassword(hashedPassword, plainPassword string) bool {
 
 // GenerateToken - Generate JWT token untuk company
 func GenerateToken(company Company) (string, error) {
+	SecretKey := LoadSecretKey()
 	if len(SecretKey) == 0 {
 		return "", errors.New("SECRET_KEY environment variable not set")
 	}
@@ -66,6 +71,7 @@ func GenerateToken(company Company) (string, error) {
 
 // ValidateToken - Validate dan parse JWT token
 func ValidateToken(tokenString string) (jwt.MapClaims, error) {
+	SecretKey := LoadSecretKey()
 	if len(SecretKey) == 0 {
 		return nil, errors.New("SECRET_KEY environment variable not set")
 	}

@@ -56,12 +56,21 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		// Store claims di context untuk digunakan di handler
 		c.Set("claims", claims)
-		c.Set("user_id", uint(claims["id"].(float64)))
-		c.Set("username", claims["username"].(string))
-		c.Set("company_name", claims["company"].(string))
-		c.Set("role", claims["role"].(string))
-
-		fmt.Printf("Auth successful for user: %s\n", claims["username"].(string))
+		
+		// Safely extract claims with type assertions
+		if id, ok := claims["id"].(float64); ok {
+			c.Set("user_id", uint(id))
+		}
+		if username, ok := claims["username"].(string); ok {
+			c.Set("username", username)
+			fmt.Printf("Auth successful for user: %s\n", username)
+		}
+		if company, ok := claims["company"].(string); ok {
+			c.Set("company_name", company)
+		}
+		if role, ok := claims["role"].(string); ok {
+			c.Set("role", role)
+		}
 
 		c.Next()
 	}

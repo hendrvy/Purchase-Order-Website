@@ -120,6 +120,76 @@ FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
 -- ============================================================================
+-- DOWNLOAD LOGS TABLE
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS download_logs (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    attachment_id INTEGER NOT NULL,
+    po_id INTEGER NOT NULL,
+    ip_address VARCHAR(45),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_download_logs_user 
+        FOREIGN KEY (user_id) 
+        REFERENCES companies(id) 
+        ON DELETE RESTRICT,
+    
+    CONSTRAINT fk_download_logs_attachment 
+        FOREIGN KEY (attachment_id) 
+        REFERENCES attachments(id) 
+        ON DELETE RESTRICT,
+    
+    CONSTRAINT fk_download_logs_po 
+        FOREIGN KEY (po_id) 
+        REFERENCES purchase_orders(id) 
+        ON DELETE RESTRICT
+);
+
+CREATE INDEX IF NOT EXISTS idx_download_logs_user_id ON download_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_download_logs_attachment_id ON download_logs(attachment_id);
+CREATE INDEX IF NOT EXISTS idx_download_logs_created_at ON download_logs(created_at);
+
+-- ============================================================================
+-- PASSWORD CHANGES TABLE
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS password_changes (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ip_address VARCHAR(45),
+    
+    CONSTRAINT fk_password_changes_user 
+        FOREIGN KEY (user_id) 
+        REFERENCES companies(id) 
+        ON DELETE RESTRICT
+);
+
+CREATE INDEX IF NOT EXISTS idx_password_changes_user_id ON password_changes(user_id);
+CREATE INDEX IF NOT EXISTS idx_password_changes_changed_at ON password_changes(changed_at);
+
+-- ============================================================================
+-- PROFILE CHANGES TABLE
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS profile_changes (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    field_name VARCHAR(50) NOT NULL,
+    old_value VARCHAR(500),
+    new_value VARCHAR(500),
+    changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ip_address VARCHAR(45),
+    
+    CONSTRAINT fk_profile_changes_user 
+        FOREIGN KEY (user_id) 
+        REFERENCES companies(id) 
+        ON DELETE RESTRICT
+);
+
+CREATE INDEX IF NOT EXISTS idx_profile_changes_user_id ON profile_changes(user_id);
+CREATE INDEX IF NOT EXISTS idx_profile_changes_changed_at ON profile_changes(changed_at);
+
+-- ============================================================================
 -- SAMPLE QUERIES FOR REFERENCE
 -- ============================================================================
 

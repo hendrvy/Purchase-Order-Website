@@ -100,3 +100,35 @@ type POStatusUpdate struct {
 type CompanyRequest struct {
 	Company Company `json:"company" binding:"required"`
 }
+
+type DownloadLog struct {
+	ID           uint      `json:"id" gorm:"primaryKey"`
+	UserID       uint      `json:"user_id" gorm:"not null"`
+	AttachmentID uint      `json:"attachment_id" gorm:"not null"`
+	POID         uint      `json:"po_id" gorm:"not null"`
+	IPAddress    string    `json:"ip_address"`
+	CreatedAt    time.Time `json:"created_at"`
+}
+
+type PasswordChange struct {
+	ID        uint      `json:"id" gorm:"primaryKey"`
+	UserID    uint      `json:"user_id" gorm:"not null"`
+	ChangedAt time.Time `json:"changed_at"`
+	IPAddress string    `json:"ip_address"`
+}
+
+type ProfileChange struct {
+	ID        uint      `json:"id" gorm:"primaryKey"`
+	UserID    uint      `json:"user_id" gorm:"not null"`
+	FieldName string    `json:"field_name" gorm:"not null"`
+	OldValue  string    `json:"old_value"`
+	NewValue  string    `json:"new_value"`
+	ChangedAt time.Time `json:"changed_at"`
+	IPAddress string    `json:"ip_address"`
+}
+
+type UpdateCompanyProfileRequest struct {
+	Email       string `json:"email"`
+	Phone       string `json:"phone"`
+	CompanyName string `json:"company_name"`
+}

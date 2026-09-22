@@ -22,6 +22,9 @@ WORKDIR /app
 # Copy hanya binary dari builder
 COPY --from=builder /app/server .
 
+# Copy environment variables if needed at runtime (handled by docker-compose via env_file)
+RUN mkdir -p /app/uploads
+
 EXPOSE 3455
 
 CMD ["./server"]

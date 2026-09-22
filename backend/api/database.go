@@ -8,7 +8,7 @@ import (
 func GetAllPurchaseOrdersDB(page int, limit int) ([]PurchaseOrder, error) {
 	var purchaseOrder []PurchaseOrder
 
-	result := DB.Find(&purchaseOrder).Offset(page - 1).Limit(limit)
+	result := DB.Where("deleted_at IS NULL").Offset(page - 1).Limit(limit).Find(&purchaseOrder)
 
 	if result.Error != nil {
 		return nil, result.Error
@@ -60,7 +60,7 @@ func UpdatePurchaseOrderDB(id uint, po *PurchaseOrder) error {
 	// - Update purchase order by ID
 	// - Return error if not found or failed
 	fmt.Printf("Updating purchase order with ID: %d\n", id)
-	result := DB.Model(&PurchaseOrder{}).Where("id = ?", po.ID).Updates(po)
+	result := DB.Model(&PurchaseOrder{}).Where("id = ?", id).Updates(po)
 
 	if result.Error != nil {
 		return result.Error
@@ -71,9 +71,6 @@ func UpdatePurchaseOrderDB(id uint, po *PurchaseOrder) error {
 
 // DeletePurchaseOrderDB - Delete purchase order from database (soft delete)
 func DeletePurchaseOrderDB(id uint) error {
-	// TODO: Implement logic
-	// - Soft delete purchase order by ID
-	// - Return error if not found or failed
 	fmt.Printf("Deleting purchase order with ID: %d\n", id)
 	result := DB.Model(&PurchaseOrder{}).Where("id = ?", id).Delete(&PurchaseOrder{})
 
@@ -82,7 +79,7 @@ func DeletePurchaseOrderDB(id uint) error {
 	}
 
 	if result.RowsAffected == 0 {
-		fmt.Println("0 Rows affected, not found")
+		return fmt.Errorf("purchase order not found")
 	}
 
 	return nil
@@ -90,14 +87,10 @@ func DeletePurchaseOrderDB(id uint) error {
 
 // GetPurchaseOrdersByCompanyDB - Get all purchase orders for a company
 func GetPurchaseOrdersByCompanyDB(companyID uint) ([]PurchaseOrder, error) {
-	// TODO: Implement logic
-	// - Query all purchase orders for the company
-	// - Apply pagination and filtering
-	// - Return list of purchase orders
 	fmt.Printf("Getting purchase orders for company ID: %d\n", companyID)
 
 	var poByCompany []PurchaseOrder
-	result := DB.Where("company_id = ?", companyID).Find(&poByCompany)
+	result := DB.Where("company_id = ? AND deleted_at IS NULL", companyID).Find(&poByCompany)
 
 	if result.Error != nil {
 		return nil, result.Error
@@ -157,28 +150,29 @@ func GetAttachmentByID(id uint) (*Attachment, error) {
 	// - Return attachment or error if not found
 	fmt.Printf("Getting attachment with ID: %d\n", id)
 
-	var dbAttachment *Attachment
+	var dbAttachment Attachment
 
-	result := DB.Model(&Attachment{}).Where("id = ?", id).First(dbAttachment)
+	result := DB.Model(&Attachment{}).Where("id = ?", id).First(&dbAttachment)
 
 	if result.Error != nil {
 		return &Attachment{}, result.Error
 	}
 
-	return dbAttachment, nil
+	return &dbAttachment, nil
 }
 
 // DeleteAttachmentDB - Delete attachment from database (soft delete)
 func DeleteAttachmentDB(id uint) error {
-	// TODO: Implement logic
-	// - Soft delete attachment by ID
-	// - Return error if not found or failed
 	fmt.Printf("Deleting attachment with ID: %d\n", id)
 
 	result := DB.Model(&Attachment{}).Where("id = ?", id).Delete(&Attachment{})
 
 	if result.Error != nil {
 		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("attachment not found")
 	}
 
 	return nil
@@ -195,7 +189,7 @@ func GetCompanyByIDDB(id uint) (*Company, error) {
 	// - Return company or error if not found
 	fmt.Printf("Getting company with ID: %d\n", id)
 
-	var companyfromdb *Company
+	var companyfromdb Company
 
 	result := DB.First(&companyfromdb, id)
 
@@ -203,7 +197,7 @@ func GetCompanyByIDDB(id uint) (*Company, error) {
 		return &Company{}, result.Error
 	}
 
-	return companyfromdb, nil
+	return &companyfromdb, nil
 }
 
 // UpdateCompanyDB - Update company profile in database
@@ -247,7 +241,7 @@ func GetCompanyByUsernameDB(username string) (*Company, error) {
 	// - Return company or error if not found
 	fmt.Printf("Getting company with username: %s\n", username)
 
-	var companyfromdb *Company
+	var companyfromdb Company
 
 	result := DB.Where("username = ?", username).First(&companyfromdb)
 
@@ -255,5 +249,96 @@ func GetCompanyByUsernameDB(username string) (*Company, error) {
 		return &Company{}, result.Error
 	}
 
-	return companyfromdb, nil
+	return &companyfromdb, nil
+}
+
+// CheckEmailExists - Check if email already exists
+func CheckEmailExists(email string, excludeID uint) bool {
+	var count int64
+	query := DB.Model(&Company{}).Where("email = ?", email)
+	if excludeID > 0 {
+		query = query.Where("id != ?", excludeID)
+	}
+	query.Count(&count)
+	return count > 0
+}
+
+// ValidateCompanyExists - Check if company exists and is not deleted
+func ValidateCompanyExists(id uint) bool {
+	var count int64
+	DB.Model(&Company{}).Where("id = ? AND deleted_at IS NULL", id).Count(&count)
+	return count > 0
+}
+
+// ValidateAttachmentExists - Check if attachment exists and is not deleted
+func ValidateAttachmentExists(id uint) bool {
+	var count int64
+	DB.Model(&Attachment{}).Where("id = ? AND deleted_at IS NULL", id).Count(&count)
+	return count > 0
+}
+
+// ValidatePurchaseOrderExists - Check if purchase order exists and is not deleted
+func ValidatePurchaseOrderExists(id uint) bool {
+	var count int64
+	DB.Model(&PurchaseOrder{}).Where("id = ? AND deleted_at IS NULL", id).Count(&count)
+	return count > 0
+}
+
+// GetPurchaseOrderOwner - Get the company_id that owns a purchase order
+func GetPurchaseOrderOwner(poID uint) (uint, error) {
+	var po PurchaseOrder
+	result := DB.Select("company_id").Where("id = ? AND deleted_at IS NULL", poID).First(&po)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return po.CompanyID, nil
+}
+
+func GetFileOwner(attachmentID uint) (uint, error) {
+	var po PurchaseOrder
+	result := DB.Model(&PurchaseOrder{}).Where("attachment_id = ? AND deleted_at IS NULL", attachmentID).First(&po)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return po.CompanyID, nil
+}
+
+// GetPOIDFromAttachment - Get purchase order ID from attachment ID
+func GetPOIDFromAttachment(attachmentID uint) (uint, error) {
+	var po PurchaseOrder
+	result := DB.Model(&PurchaseOrder{}).Select("id").Where("attachment_id = ? AND deleted_at IS NULL", attachmentID).First(&po)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return po.ID, nil
+}
+
+// CreateDownloadLog - Log file download
+func CreateDownloadLog(log *DownloadLog) error {
+	fmt.Println("Creating download log in database")
+	result := DB.Create(log)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+// CreatePasswordChangeLog - Log password change
+func CreatePasswordChangeLog(log *PasswordChange) error {
+	fmt.Println("Creating password change log in database")
+	result := DB.Create(log)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+// CreateProfileChangeLog - Log profile change
+func CreateProfileChangeLog(log *ProfileChange) error {
+	fmt.Println("Creating profile change log in database")
+	result := DB.Create(log)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
 }
