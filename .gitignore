@@ -14,3 +14,10 @@ backend/.env.local
 
 # Legacy
 web/
+
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib

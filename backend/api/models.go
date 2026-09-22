@@ -6,8 +6,17 @@ import (
 	"gorm.io/gorm"
 )
 
+type Roles string
+
+const (
+	RoleUser      Roles = "user"
+	RoleValidator Roles = "validator"
+	RoleAdmin     Roles = "admin"
+)
+
 type Company struct {
 	ID          uint           `json:"id" gorm:"primaryKey"`
+	Role        Roles          `json:"role" gorm:"type:varchar(50);not null;default:'user'" binding:"required,oneof=user validator admin"`
 	Username    string         `json:"username" binding:"required" gorm:"unique;not null"`
 	CompanyName string         `json:"company_name" binding:"required" gorm:"not null"`
 	Password    string         `json:"password,omitempty" gorm:"not null"`
@@ -24,6 +33,7 @@ type PurchaseOrder struct {
 	CompanyID    uint           `json:"company_id" gorm:"not null"`
 	AttachmentID uint           `json:"attachment_id" gorm:"not null"`
 	ResiNumber   string         `json:"resi_number"`
+	Notes        string         `json:"notes"`
 	Status       string         `json:"status" gorm:"default:verifying"`
 	CreatedAt    time.Time      `json:"created_at"`
 	UpdatedAt    time.Time      `json:"updated_at"`
@@ -32,9 +42,9 @@ type PurchaseOrder struct {
 
 type Attachment struct {
 	ID        uint           `json:"id" gorm:"primaryKey"`
-	FileName  string         `json:"filename" gorm:"not null"`
-	FilePath  string         `json:"filepath" gorm:"not null"`
-	MimeType  string         `json:"mime_type"`
+	FileName  string         `json:"filename" gorm:"column:filename;not null"`
+	FilePath  string         `json:"filepath" gorm:"column:filepath;not null"`
+	MimeType  string         `json:"mime_type" gorm:"column:mime_type"`
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
@@ -56,6 +66,14 @@ type LoginRequest struct {
 type LoginResponse struct {
 	Token   string  `json:"token"`
 	Company Company `json:"company"`
+}
+
+type TokenRequest struct {
+	Token string `json:"token"`
+}
+
+type TokenResponse struct {
+	Valid bool `json:"valid"`
 }
 
 type ChangePasswordRequest struct {
@@ -81,4 +99,36 @@ type POStatusUpdate struct {
 
 type CompanyRequest struct {
 	Company Company `json:"company" binding:"required"`
+}
+
+type DownloadLog struct {
+	ID           uint      `json:"id" gorm:"primaryKey"`
+	UserID       uint      `json:"user_id" gorm:"not null"`
+	AttachmentID uint      `json:"attachment_id" gorm:"not null"`
+	POID         uint      `json:"po_id" gorm:"not null"`
+	IPAddress    string    `json:"ip_address"`
+	CreatedAt    time.Time `json:"created_at"`
+}
+
+type PasswordChange struct {
+	ID        uint      `json:"id" gorm:"primaryKey"`
+	UserID    uint      `json:"user_id" gorm:"not null"`
+	ChangedAt time.Time `json:"changed_at"`
+	IPAddress string    `json:"ip_address"`
+}
+
+type ProfileChange struct {
+	ID        uint      `json:"id" gorm:"primaryKey"`
+	UserID    uint      `json:"user_id" gorm:"not null"`
+	FieldName string    `json:"field_name" gorm:"not null"`
+	OldValue  string    `json:"old_value"`
+	NewValue  string    `json:"new_value"`
+	ChangedAt time.Time `json:"changed_at"`
+	IPAddress string    `json:"ip_address"`
+}
+
+type UpdateCompanyProfileRequest struct {
+	Email       string `json:"email"`
+	Phone       string `json:"phone"`
+	CompanyName string `json:"company_name"`
 }

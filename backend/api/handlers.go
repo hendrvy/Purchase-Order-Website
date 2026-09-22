@@ -2,102 +2,106 @@ package api
 
 import (
 	"fmt"
-	"net/http"
+	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 var DB *gorm.DB
+var folderPath = "/app/uploads"
+
+func init() {
+	// Load environment variables from .env file
+	godotenv.Load()
+
+	// Set default upload folder path from env or use default
+	folderPath = os.Getenv("UPLOAD_FOLDER_PATH")
+	if folderPath == "" {
+		folderPath = "/app/uploads"
+	}
+}
 
 func DBConnect() *gorm.DB {
-	var dsn string = "host=postgres user=smsadmin123 password=puderpuder123 dbname=Purchase-Order-Website port=5432 sslmode=disable"
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	// Load environment variables from .env file
+	godotenv.Load()
+
+	// Get database configuration from environment variables
+	dbHost := os.Getenv("DB_HOST")
+	if dbHost == "" {
+		panic("DB_HOST environment variable is required")
+	}
+
+	dbUser := os.Getenv("DB_USER")
+	if dbUser == "" {
+		panic("DB_USER environment variable is required")
+	}
+
+	dbPassword := os.Getenv("DB_PASSWORD")
+	if dbPassword == "" {
+		panic("DB_PASSWORD environment variable is required")
+	}
+
+	dbName := os.Getenv("DB_NAME")
+	if dbName == "" {
+		panic("DB_NAME environment variable is required")
+	}
+
+	dbPort := os.Getenv("DB_PORT")
+	if dbPort == "" {
+		dbPort = "5432"
+	}
+
+	dbSSLMode := os.Getenv("DB_SSLMODE")
+	if dbSSLMode == "" {
+		dbSSLMode = "disable"
+	}
+
+	// Build DSN from environment variables
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
+		dbHost, dbUser, dbPassword, dbName, dbPort, dbSSLMode)
+
+	// Retry logic for database connection
+	var db *gorm.DB
+	var err error
+	maxRetries := 10
+	retryDelay := 2 * time.Second
+
+	for i := 0; i < maxRetries; i++ {
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+		if err == nil {
+			break
+		}
+		fmt.Printf("Database connection attempt %d/%d failed: %v\n", i+1, maxRetries, err)
+		if i < maxRetries-1 {
+			time.Sleep(retryDelay)
+		}
+	}
+
 	if err != nil {
-		panic("failed to connect to database")
+		panic(fmt.Sprintf("failed to connect to database after %d retries: %v", maxRetries, err))
 	}
 
 	DB = db
 	return db
 }
 
-func HelloIn(c *gin.Context) {
-	var helloReq HelloRequest
-	if err := c.BindJSON(&helloReq); err != nil {
-		c.JSON(400, gin.H{"error": "False input field"})
+// queryInt - Utility function to parse query parameters as integers
+func queryInt(c *gin.Context, key string, defaultVal int) int {
+	val := c.DefaultQuery(key, "")
+	if val == "" {
+		return defaultVal
 	}
-
-	if helloReq.Message != "" {
-		c.JSON(200, HelloRequest{
-			Message: "Hello from server! You said : " + helloReq.Message,
-		})
+	var result int
+	_, err := fmt.Sscanf(val, "%d", &result)
+	if err != nil || result < 1 {
+		return defaultVal
 	}
-}
-
-func InsertCompany(c *gin.Context) {
-	var companyReq CompanyRequest
-	if err := c.BindJSON(&companyReq); err != nil {
-		c.JSON(400, gin.H{"error": "not a Company data request"})
+	if key == "limit" && result > 100 {
+		return 100
 	}
-
-	if companyReq.Company.CompanyName != "" {
-		c.JSON(200, gin.H{"message": "Company data acquired \n" + companyReq.Company.CompanyName})
-	}
-
-}
-
-func Login(c *gin.Context) {
-	var logReq LoginRequest
-	var response LoginResponse
-	if err := c.BindJSON(&logReq); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid Data"})
-	}
-
-	var user Company
-
-	DB.Where("username = ?", logReq.Username).First(&user)
-	if user.ID == 0 {
-		fmt.Println("Failed Login")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Username or password is incorrect!"})
-		return
-	}
-
-	if user.Password != logReq.Password {
-		fmt.Println("Failed Login")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Username or password is incorrect!"})
-		return
-	}
-
-	response = LoginResponse{
-		Token: "Success",
-		Company: Company{
-			ID:          user.ID,
-			Username:    user.Username,
-			CompanyName: user.CompanyName,
-			Email:       user.Email,
-		},
-	}
-
-	c.JSON(http.StatusOK, response)
-}
-
-func Register(c *gin.Context) {
-	var registReq RegisterRequest
-	if err := c.BindJSON(&registReq); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid Data"})
-	}
-
-	var data *Company = &registReq.Company
-
-	if data.CompanyName != "" && data.Username != "" {
-		c.JSON(http.StatusOK, gin.H{"message": "Registered successfully with \n Company Name : " + data.CompanyName +
-			"Username : " + data.Username})
-	}
-
-	DB.Delete(&Company{}, 1)
-	result := DB.Create(&data)
-	fmt.Println(result.Error)
-	fmt.Println(result.RowsAffected)
-
+	return result
 }
