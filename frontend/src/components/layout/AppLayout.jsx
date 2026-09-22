@@ -51,7 +51,7 @@ export function AppLayout() {
 
           {/* Dropdown */}
           {isProfileOpen && (
-            <div className="mb-2 rounded-lg border border-gray-300 bg-white p-1 shadow-l">
+            <div className="mb-2 rounded-lg border border-gray-300 bg-white p-1 shadow-md">
 
               <button
                 type="button"
