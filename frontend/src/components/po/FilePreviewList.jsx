@@ -1,5 +1,5 @@
 import { FileText, X } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { formatFileSize } from '@/lib/format.js'
 
 /**
@@ -44,52 +44,119 @@ function useImagePreviews(files) {
  */
 export function FilePreviewList({ files, onRemove, disabled = false }) {
   const previews = useImagePreviews(files)
+  const [previewFile, setPreviewFile] = useState(null)
+  const isPreviewingImage = previewFile?.type.startsWith('image/') ?? false
+
+  // Images already have an object URL from useImagePreviews (and its own
+  // revocation logic), so only build/revoke a separate URL for non-image
+  // previews (e.g. PDFs) here.
+  const nonImagePreviewUrl = useMemo(
+    () => (previewFile && !isPreviewingImage ? URL.createObjectURL(previewFile) : null),
+    [previewFile, isPreviewingImage],
+  )
+
+  useEffect(() => {
+    return () => {
+      if (nonImagePreviewUrl) {
+        URL.revokeObjectURL(nonImagePreviewUrl)
+      }
+    }
+  }, [nonImagePreviewUrl])
+
+  const previewUrl = isPreviewingImage ? previews.get(previewFile) : nonImagePreviewUrl
 
   if (files.length === 0) {
     return null
   }
 
   return (
-    <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-      {files.map((file, index) => {
-        const previewUrl = previews.get(file)
-
-        return (
-          <li
-            key={`${file.name}-${file.lastModified}-${index}`}
-            className="relative flex flex-col overflow-hidden rounded-md border border-gray-200 bg-white"
+    <>
+      {previewFile && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6"
+          onClick={() => setPreviewFile(null)}
+        >
+          <div
+            className="flex h-[90vh] w-full max-w-4xl flex-col rounded-xl bg-white"
+            onClick={(event) => event.stopPropagation()}
           >
-            <button
-              type="button"
-              onClick={() => onRemove(index)}
-              disabled={disabled}
-              aria-label={`Hapus ${file.name}`}
-              className="absolute top-1 right-1 z-10 rounded-full bg-black/60 p-1 text-white transition hover:bg-black/80 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <X size={12} />
-            </button>
+            <div className="flex items-center justify-between border-b px-4 py-3">
+              <p className='truncate text-sm font-medium text-gray-800'>
+                {previewFile.name}
+              </p>
 
-            <div className="flex h-24 w-full items-center justify-center bg-gray-100">
-              {previewUrl ? (
+              <button
+                type="button"
+                onClick={() => setPreviewFile(null)}
+                className='rounded-full p-1 text-gray-500 hover:bg-gray-100 hover:text-black'
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {previewUrl && (
+              isPreviewingImage ? (
                 <img
                   src={previewUrl}
-                  alt={file.name}
-                  className="h-full w-full object-cover"
+                  alt={previewFile.name}
+                  className='h-full w-full rounded-b-xl object-contain'
                 />
               ) : (
-                <FileText size={32} className="text-gray-400" />
-              )}
-            </div>
+                <iframe
+                  src={previewUrl}
+                  title={previewFile.name}
+                  className='h-full w-full rounded-b-xl'
+                />
+              )
+            )}
+          </div>
+        </div>
+      )}
 
-            <div className="p-2">
-              <p className="truncate text-xs font-medium text-gray-700" title={file.name}>
-                {file.name}
-              </p>
-              <p className="text-[11px] text-gray-400">{formatFileSize(file.size)}</p>
-            </div>
-          </li>
-        )
-      })}
-    </ul>
+      <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {files.map((file, index) => {
+          const thumbnailUrl = previews.get(file)
+
+          return (
+            <li
+              key={`${file.name}-${file.lastModified}-${index}`}
+              className="relative flex flex-col overflow-hidden rounded-md border border-gray-200 bg-white"
+            >
+              <button
+                type="button"
+                onClick={() => onRemove(index)}
+                disabled={disabled}
+                aria-label={`Hapus ${file.name}`}
+                className="absolute top-1 right-1 z-10 rounded-full bg-black/60 p-1 text-white transition hover:bg-black/80 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <X size={12} />
+              </button>
+
+              <div
+                className="flex h-24 w-full cursor-pointer items-center justify-center bg-gray-100"
+                onClick={() => setPreviewFile(file)}
+              >
+                {thumbnailUrl ? (
+                  <img
+                    src={thumbnailUrl}
+                    alt={file.name}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <FileText size={32} className="text-gray-400" />
+                )}
+              </div>
+
+              <div className="p-2">
+                <p className="truncate text-xs font-medium text-gray-700" title={file.name}>
+                  {file.name}
+                </p>
+                <p className="text-[11px] text-gray-400">{formatFileSize(file.size)}</p>
+              </div>
+            </li>
+          )
+        })}
+      </ul>
+    </>
   )
 }
