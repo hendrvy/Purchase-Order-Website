@@ -93,6 +93,8 @@ func Login(c *gin.Context) {
 			Username:    user.Username,
 			CompanyName: user.CompanyName,
 			Email:       user.Email,
+			Phone:       user.Phone,
+			PhotoPath:   user.PhotoPath,
 			Role:        user.Role,
 		},
 	}
