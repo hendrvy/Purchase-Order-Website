@@ -5,7 +5,7 @@ import { FileText, Image as ImageIcon } from 'lucide-react'
  */
 
 /**
- * Small row of clickable file icons/thumbnails representing the
+ * List of clickable file chips (icon + filename) representing the
  * attachments already uploaded for a purchase order (used in
  * HistoryTable). Clicking one opens the full preview modal via
  * `onPreview`.
@@ -18,7 +18,7 @@ export function AttachmentThumbnailList({ attachments = [], onPreview }) {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
+    <div className="flex flex-col items-start gap-1.5">
       {attachments.map((attachment) => {
         const isImage = attachment.mime_type?.startsWith('image/')
 
@@ -28,9 +28,14 @@ export function AttachmentThumbnailList({ attachments = [], onPreview }) {
             type="button"
             onClick={() => onPreview(attachment)}
             title={attachment.filename}
-            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md border border-gray-200 bg-gray-50 text-gray-500 transition hover:border-[#D97745] hover:text-[#D97745]"
+            className="flex max-w-[180px] items-center gap-1.5 rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-gray-600 transition hover:border-[#D97745] hover:text-[#D97745]"
           >
-            {isImage ? <ImageIcon size={14} /> : <FileText size={14} />}
+            {isImage ? (
+              <ImageIcon size={14} className="flex-shrink-0" />
+            ) : (
+              <FileText size={14} className="flex-shrink-0" />
+            )}
+            <span className="truncate text-xs">{attachment.filename}</span>
           </button>
         )
       })}

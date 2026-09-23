@@ -35,7 +35,7 @@ export function HistoryTable({ orders }) {
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left text-sm">
+            <table className="w-full min-w-[820px] text-left text-sm">
               <thead>
                 <tr className="border-b border-gray-100 text-xs font-medium text-gray-500">
                   <th className="px-5 py-3">No. PO</th>
