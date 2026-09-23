@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { ChevronUp, ChevronDown, LogOut, User } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext.jsx'
 import { ROLE_LABELS } from '@/types/role.js'
 import { ProfileAvatar } from '@/components/profile/ProfileAvatar.jsx'
-import { EditProfileModal } from '@/components/profile/EditProfileModal.jsx'
 import logo from '@/assets/logo.png'
 
 const NAV_ITEMS = [
@@ -15,8 +14,8 @@ const NAV_ITEMS = [
 
 export function AppLayout() {
   const { user, logout } = useAuth()
+  const navigate = useNavigate()
   const [isProfileOpen, setIsProfileOpen] = useState(false)
-  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false)
   const profileRef = useRef(null)
 
   // Close the profile dropdown when clicking anywhere outside of it.
@@ -77,7 +76,7 @@ export function AppLayout() {
                 type="button"
                 onClick={() => {
                   setIsProfileOpen(false)
-                  setIsEditProfileOpen(true)
+                  navigate('/profile')
                 }}
                 className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
               >
@@ -134,8 +133,6 @@ export function AppLayout() {
       <main className="flex-1 px-6 py-6">
         <Outlet />
       </main>
-
-      <EditProfileModal open={isEditProfileOpen} onClose={() => setIsEditProfileOpen(false)} />
 
     </div>
   )

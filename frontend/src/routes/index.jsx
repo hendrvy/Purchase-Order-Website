@@ -3,6 +3,7 @@ import { AppLayout } from '@/components/layout/AppLayout.jsx'
 import { DashboardPage } from '@/pages/DashboardPage.jsx'
 import { HistoryOrderPage } from '@/pages/HistoryOrderPage.jsx'
 import { LoginPage } from '@/pages/LoginPage.jsx'
+import { ProfilePage } from '@/pages/ProfilePage.jsx'
 import { PurchaseOrderPage } from '@/pages/PurchaseOrderPage.jsx'
 import { ProtectedRoute } from '@/routes/ProtectedRoute.jsx'
 
@@ -22,6 +23,7 @@ export const router = createBrowserRouter([
           { path: 'dashboard', element: <DashboardPage /> },
           { path: 'purchase-order', element: <PurchaseOrderPage /> },
           { path: 'history', element: <HistoryOrderPage /> },
+          { path: 'profile', element: <ProfilePage /> },
         ],
       },
     ],
