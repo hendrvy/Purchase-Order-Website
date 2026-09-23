@@ -58,6 +58,9 @@ func main() {
 	// ========================================================================
 	protected.GET("/companies/:id", api.GetCompanyByID)
 	protected.PUT("/companies/:id", api.UpdateCompanyProfile)
+	protected.POST("/companies/:id/photo", api.UploadCompanyPhoto)
+	protected.DELETE("/companies/:id/photo", api.DeleteCompanyPhoto)
+	protected.GET("/companies/:id/photo", api.GetCompanyPhoto)
 	protected.POST("/change-password", api.ChangePassword)
 
 	var port string = ":3455"

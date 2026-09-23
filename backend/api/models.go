@@ -22,6 +22,7 @@ type Company struct {
 	Password    string         `json:"password,omitempty" gorm:"not null"`
 	Email       string         `json:"email" gorm:"unique;not null"`
 	Phone       string         `json:"phone"`
+	PhotoPath   string         `json:"photo_path" gorm:"column:photo_path"`
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`
 	DeletedAt   gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
@@ -128,7 +129,17 @@ type ProfileChange struct {
 }
 
 type UpdateCompanyProfileRequest struct {
+	Username    string `json:"username"`
 	Email       string `json:"email"`
 	Phone       string `json:"phone"`
 	CompanyName string `json:"company_name"`
+}
+
+// UpdateCompanyProfileResponse - wraps the updated company plus a freshly
+// issued JWT, since username/company_name/email are embedded in the JWT
+// claims (see GenerateToken) and would otherwise go stale until the old
+// token expires or the user logs in again.
+type UpdateCompanyProfileResponse struct {
+	Token   string  `json:"token"`
+	Company Company `json:"company"`
 }

@@ -28,7 +28,7 @@ export function HistoryStatusFilter({ value, onChange }) {
                         onClick={() => onChange(status)}
                         className={
                             isActive
-                                ? "rounded-[20px] border border-[#B00100] bg-red-50 px-4 py-1.5 text-sm font-medium text-[#B00100]"
+                                ? "rounded-[20px] border border-[#B00100] bg-red-50 px-4 py-1.5 text-sm text-[#B00100]"
                                 : "rounded-[20px] border border-gray-200 bg-white px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-100"
                         }
                     >

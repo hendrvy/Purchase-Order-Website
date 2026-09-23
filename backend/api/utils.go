@@ -16,6 +16,7 @@ import (
 const (
 	MaxFileSize         = 5 * 1024 * 1024 // 5MB
 	MaxAttachmentsPerPO = 10              // Maximum attachments allowed per purchase order
+	MaxPhotoSize        = 2 * 1024 * 1024 // 2MB - profile photos should be small
 )
 
 var (
@@ -65,6 +66,39 @@ func isAllowedExtension(ext string) bool {
 		".webp": true,
 	}
 	return allowedExts[ext]
+}
+
+// isAllowedImageExtension - Check if file extension is an allowed image type
+// (stricter than isAllowedExtension - excludes PDF, used for profile photos).
+func isAllowedImageExtension(ext string) bool {
+	allowedExts := map[string]bool{
+		".jpg":  true,
+		".jpeg": true,
+		".png":  true,
+		".webp": true,
+	}
+	return allowedExts[ext]
+}
+
+// ValidateImageFile - Validate an image file before upload (used for
+// profile photos). Stricter than ValidateFile: rejects PDFs and enforces
+// the smaller MaxPhotoSize limit.
+func ValidateImageFile(file *multipart.FileHeader) error {
+	if file == nil {
+		return fmt.Errorf("file is required")
+	}
+
+	if file.Size > MaxPhotoSize {
+		return fmt.Errorf("file size exceeds %dMB limit. Maximum: %d bytes, Received: %d bytes",
+			MaxPhotoSize/1024/1024, MaxPhotoSize, file.Size)
+	}
+
+	ext := strings.ToLower(filepath.Ext(file.Filename))
+	if !isAllowedImageExtension(ext) {
+		return fmt.Errorf("file type '%s' is not allowed. Allowed types: .jpg, .jpeg, .png, .webp", ext)
+	}
+
+	return nil
 }
 
 // GetMimeType - Get MIME type from file extension

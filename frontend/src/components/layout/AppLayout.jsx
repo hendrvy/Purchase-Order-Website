@@ -3,6 +3,9 @@ import { NavLink, Outlet } from 'react-router-dom'
 import { ChevronUp, ChevronDown, LogOut, User } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext.jsx'
 import { ROLE_LABELS } from '@/types/role.js'
+import { ProfileAvatar } from '@/components/profile/ProfileAvatar.jsx'
+import { EditProfileModal } from '@/components/profile/EditProfileModal.jsx'
+import logo from '@/assets/logo.png'
 
 const NAV_ITEMS = [
   { to: '/dashboard', label: 'Dashboard' },
@@ -13,6 +16,7 @@ const NAV_ITEMS = [
 export function AppLayout() {
   const { user, logout } = useAuth()
   const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false)
   const profileRef = useRef(null)
 
   // Close the profile dropdown when clicking anywhere outside of it.
@@ -37,6 +41,7 @@ export function AppLayout() {
 
         {/* Logo */}
         <div className="px-6 py-6 text-center">
+          <img src={logo} alt="SMS Order" className="mx-auto h-10 w-auto" />
           <h1 className="text-xl font-bold text-[#B00100]">
             SMS Order
           </h1>
@@ -70,6 +75,10 @@ export function AppLayout() {
 
               <button
                 type="button"
+                onClick={() => {
+                  setIsProfileOpen(false)
+                  setIsEditProfileOpen(true)
+                }}
                 className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
               >
                 <User size={17} />
@@ -96,9 +105,7 @@ export function AppLayout() {
           >
 
             {/* Avatar */}
-            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gray-200 text-sm font-semibold text-gray-700">
-              {user?.company_name?.charAt(0).toUpperCase()}
-            </div>
+            <ProfileAvatar user={user} size={36} />
 
             {/* User Info */}
             <div className="flex-1 overflow-hidden">
@@ -127,6 +134,8 @@ export function AppLayout() {
       <main className="flex-1 px-6 py-6">
         <Outlet />
       </main>
+
+      <EditProfileModal open={isEditProfileOpen} onClose={() => setIsEditProfileOpen(false)} />
 
     </div>
   )

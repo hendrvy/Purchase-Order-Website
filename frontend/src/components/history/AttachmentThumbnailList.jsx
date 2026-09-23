@@ -28,7 +28,7 @@ export function AttachmentThumbnailList({ attachments = [], onPreview }) {
             type="button"
             onClick={() => onPreview(attachment)}
             title={attachment.filename}
-            className="flex max-w-[180px] items-center gap-1.5 rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-gray-600 transition hover:border-[#D97745] hover:text-[#D97745]"
+            className="flex max-w-[180px] items-center gap-1.5 rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-gray-600 transition hover:border-[#B00100] hover:text-[#B00100]"
           >
             {isImage ? (
               <ImageIcon size={14} className="flex-shrink-0" />

@@ -260,6 +260,17 @@ func CheckEmailExists(email string, excludeID uint) bool {
 	return count > 0
 }
 
+// CheckUsernameExists - Check if username already exists (excluding a given ID, e.g. self during profile update)
+func CheckUsernameExists(username string, excludeID uint) bool {
+	var count int64
+	query := DB.Model(&Company{}).Where("username = ?", username)
+	if excludeID > 0 {
+		query = query.Where("id != ?", excludeID)
+	}
+	query.Count(&count)
+	return count > 0
+}
+
 // ValidateCompanyExists - Check if company exists and is not deleted
 func ValidateCompanyExists(id uint) bool {
 	var count int64

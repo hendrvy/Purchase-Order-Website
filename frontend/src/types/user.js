@@ -12,6 +12,7 @@
  * @property {string} company_name
  * @property {string} email
  * @property {string} [phone]
+ * @property {string} [photo_path] - Filename on disk; build a viewable URL via GET /api/companies/:id/photo.
  * @property {Role} role
  * @property {string} [created_at]
  * @property {string} [updated_at]
