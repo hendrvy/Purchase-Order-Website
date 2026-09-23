@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { ChevronUp, ChevronDown, LogOut, User } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext.jsx'
@@ -13,6 +13,21 @@ const NAV_ITEMS = [
 export function AppLayout() {
   const { user, logout } = useAuth()
   const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const profileRef = useRef(null)
+
+  // Close the profile dropdown when clicking anywhere outside of it.
+  useEffect(() => {
+    if (!isProfileOpen) return
+
+    function handleClickOutside(event) {
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setIsProfileOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isProfileOpen])
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -47,7 +62,7 @@ export function AppLayout() {
         </nav>
 
         {/* Profile */}
-        <div className="mt-auto px-4 py-4">
+        <div ref={profileRef} className="mt-auto px-4 py-4">
 
           {/* Dropdown */}
           {isProfileOpen && (
