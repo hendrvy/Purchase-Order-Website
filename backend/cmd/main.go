@@ -63,6 +63,21 @@ func main() {
 	protected.GET("/companies/:id/photo", api.GetCompanyPhoto)
 	protected.POST("/change-password", api.ChangePassword)
 
+	// ========================================================================
+	// Admin-Only Routes (User Management & Activity Log)
+	// ========================================================================
+	admin := protected.Group("")
+	admin.Use(api.RequireAdmin())
+
+	admin.GET("/companies", api.AdminListCompanies)
+	admin.POST("/companies", api.AdminCreateCompany)
+	admin.PUT("/companies/:id/role", api.AdminUpdateCompanyRole)
+	admin.POST("/companies/:id/reset-password", api.AdminResetCompanyPassword)
+
+	admin.GET("/audit/profile-changes", api.AdminGetProfileChangeLogs)
+	admin.GET("/audit/password-changes", api.AdminGetPasswordChangeLogs)
+	admin.GET("/audit/downloads", api.AdminGetDownloadLogs)
+
 	var port string = ":3455"
 
 	fmt.Printf("Server is running on %s\n", port)

@@ -183,3 +183,50 @@ func ValidatePOCreateFields(poNumber string, title string, totalAmount float64, 
 
 	return nil
 }
+
+// ============================================================================
+// PO STATUS TRANSITION RULES
+// ============================================================================
+
+// allowedStatusTransitions - Mirrors the client-side rules in
+// frontend/src/lib/status.js TRANSITION_RULES. Kept as the backend source
+// of truth so status changes can never skip steps even via direct API
+// calls, regardless of what the frontend sends.
+var allowedStatusTransitions = map[string][]string{
+	"verifying": {"process", "rejected"},
+	"process":   {"shipping"},
+	"shipping":  {"complete"},
+	"complete":  {},
+	"rejected":  {},
+}
+
+// ValidateStatusTransition - Check that moving a PO from currentStatus to
+// newStatus is a legal transition.
+func ValidateStatusTransition(currentStatus string, newStatus string) error {
+	allowed, ok := allowedStatusTransitions[currentStatus]
+	if !ok {
+		return fmt.Errorf("unknown current status '%s'", currentStatus)
+	}
+
+	for _, s := range allowed {
+		if s == newStatus {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("cannot transition purchase order from '%s' to '%s'", currentStatus, newStatus)
+}
+
+// ============================================================================
+// ROLE VALIDATION
+// ============================================================================
+
+// IsValidRole - Check that a role string is one of the known roles.
+func IsValidRole(role string) bool {
+	switch Roles(role) {
+	case RoleUser, RoleValidator, RoleAdmin:
+		return true
+	default:
+		return false
+	}
+}

@@ -6,6 +6,7 @@
 import { apiClient, ApiError } from '@/api/client.js'
 import { getStoredUser } from '@/lib/storage.js'
 import { MOCK_PURCHASE_ORDERS } from '@/mocks/po.js'
+import { MOCK_COMPANIES } from '@/mocks/companies.js'
 
 /**
  * Set VITE_USE_MOCKS=true in .env to develop against the in-memory mock
@@ -132,6 +133,23 @@ export async function createPurchaseOrder(input) {
 }
 
 /**
+ * Attaches the requesting company (minus password) to each mock PO,
+ * mirroring the `Preload("Company")` done server-side (see
+ * GetAllPurchaseOrdersDB/GetPurchaseOrdersByCompanyDB in
+ * backend/api/database.go), so the History table's "Perusahaan" column
+ * has data to show in mock mode too.
+ *
+ * @param {PurchaseOrder[]} orders
+ * @returns {PurchaseOrder[]}
+ */
+function withMockCompany(orders) {
+  return orders.map((order) => ({
+    ...order,
+    company: MOCK_COMPANIES.find((company) => company.id === order.company_id) ?? null,
+  }))
+}
+
+/**
  * Fetches purchase orders visible to the logged-in user. The backend
  * applies role-based filtering server-side: `user` role only sees their
  * own company's POs, `validator`/`admin` see all (paginated).
@@ -142,10 +160,51 @@ export async function createPurchaseOrder(input) {
 export async function getPurchaseOrders(options = {}) {
   if (shouldUseMocks()) {
     await delay(300)
-    return MOCK_PURCHASE_ORDERS
+    const user = getStoredUser()
+    const visibleOrders =
+      user?.role === 'user'
+        ? MOCK_PURCHASE_ORDERS.filter((order) => order.company_id === user.id)
+        : MOCK_PURCHASE_ORDERS
+    return withMockCompany(visibleOrders)
   }
 
   const { page = 1, limit = 100 } = options
   const response = await apiClient.get('/api/purchase-orders', { params: { page, limit } })
   return response.data.data ?? []
+}
+
+/**
+ * Updates the status of a purchase order. Only callable by validator/admin
+ * accounts (enforced server-side, see
+ * backend/api/purchase_order_handlers.go UpdatePurchaseOrderStatus).
+ * `resi_number` is required by the backend when moving to `shipping`.
+ *
+ * @param {number} id
+ * @param {{ status: import('@/types/po.js').POStatus, resi_number?: string, notes?: string }} input
+ * @returns {Promise<void>}
+ */
+export async function updatePurchaseOrderStatus(id, input) {
+  if (shouldUseMocks()) {
+    await delay(400)
+
+    if (input.status === 'shipping' && !input.resi_number) {
+      throw new ApiError('No. Resi wajib diisi untuk status Shipping.', {
+        status: 400,
+        errors: { resi_number: 'No. Resi wajib diisi.' },
+      })
+    }
+
+    const order = MOCK_PURCHASE_ORDERS.find((item) => item.id === id)
+    if (!order) {
+      throw new ApiError('Purchase order tidak ditemukan.', { status: 404 })
+    }
+
+    order.status = input.status
+    if (input.resi_number) order.resi_number = input.resi_number
+    if (input.notes) order.notes = input.notes
+    order.updated_at = new Date().toISOString()
+    return
+  }
+
+  await apiClient.put(`/api/purchase-orders/${id}/status`, input)
 }

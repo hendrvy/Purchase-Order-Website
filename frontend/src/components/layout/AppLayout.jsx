@@ -6,10 +6,17 @@ import { ROLE_LABELS } from '@/types/role.js'
 import { ProfileAvatar } from '@/components/profile/ProfileAvatar.jsx'
 import logo from '@/assets/logo.png'
 
-const NAV_ITEMS = [
-  { to: '/dashboard', label: 'Dashboard' },
-  { to: '/purchase-order', label: 'Purchase Order' },
-  { to: '/history', label: 'History' },
+const DASHBOARD_NAV_ITEM = { to: '/dashboard', label: 'Dashboard' }
+const HISTORY_NAV_ITEM = { to: '/history', label: 'History' }
+
+// Only the "user" role submits purchase orders - validator/admin only
+// review/manage them via the History table, so they have no need for the
+// create-PO form/nav item.
+const PURCHASE_ORDER_NAV_ITEM = { to: '/purchase-order', label: 'Purchase Order' }
+
+const ADMIN_NAV_ITEMS = [
+  { to: '/admin/users', label: 'Kelola User' },
+  { to: '/admin/activity-log', label: 'Log Aktivitas' },
 ]
 
 export function AppLayout() {
@@ -17,6 +24,13 @@ export function AppLayout() {
   const navigate = useNavigate()
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const profileRef = useRef(null)
+
+  const navItems = [
+    DASHBOARD_NAV_ITEM,
+    ...(user?.role === 'user' ? [PURCHASE_ORDER_NAV_ITEM] : []),
+    HISTORY_NAV_ITEM,
+    ...(user?.role === 'admin' ? ADMIN_NAV_ITEMS : []),
+  ]
 
   // Close the profile dropdown when clicking anywhere outside of it.
   useEffect(() => {
@@ -48,7 +62,7 @@ export function AppLayout() {
 
         {/* Navigation */}
         <nav className="flex flex-col gap-2 px-4">
-          {NAV_ITEMS.map((item) => (
+          {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}

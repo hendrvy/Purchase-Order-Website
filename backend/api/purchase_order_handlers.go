@@ -375,6 +375,35 @@ func UpdatePurchaseOrderStatus(c *gin.Context) {
 		return
 	}
 
+	// Shipping requires a resi (tracking) number.
+	if poReq.Status == "shipping" && poReq.ResiNumber == "" {
+		c.JSON(http.StatusBadRequest, JsonResponse{
+			Status:  http.StatusBadRequest,
+			Message: "Invalid request format",
+			Error:   "resi_number is required when moving a purchase order to 'shipping'",
+		})
+		return
+	}
+
+	existingPO, err := GetPurchaseOrderByIDDB(poID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, JsonResponse{
+			Status:  http.StatusNotFound,
+			Error:   "Purchase order not found",
+			Message: "No purchase order with that ID",
+		})
+		return
+	}
+
+	if err := ValidateStatusTransition(existingPO.Status, poReq.Status); err != nil {
+		c.JSON(http.StatusBadRequest, JsonResponse{
+			Status:  http.StatusBadRequest,
+			Error:   err.Error(),
+			Message: "Invalid status transition",
+		})
+		return
+	}
+
 	if err := UpdatePurchaseOrderDB(poID, &poReq); err != nil {
 		c.JSON(http.StatusNotFound, JsonResponse{
 			Status:  http.StatusNotFound,

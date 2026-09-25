@@ -33,6 +33,7 @@ export const TERMINAL_PO_STATUSES = ['complete', 'rejected']
  * @property {number} id
  * @property {string} po_number
  * @property {number} company_id
+ * @property {{ id: number, company_name: string, username: string } | null} [company] - The requesting company, preloaded server-side (see GetAllPurchaseOrdersDB/GetPurchaseOrderByIDDB) so validator/admin tables can show who submitted the PO without a second lookup.
  * @property {string} title
  * @property {number} total_amount
  * @property {string} [notes]

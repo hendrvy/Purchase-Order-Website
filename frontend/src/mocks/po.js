@@ -40,7 +40,7 @@ export const MOCK_PURCHASE_ORDERS = [
   {
     id: 1003,
     po_number: 'PO-2026-1003',
-    company_id: 1,
+    company_id: 4,
     title: 'Perlengkapan Meeting Room',
     total_amount: 4200000,
     notes: '',
@@ -53,7 +53,7 @@ export const MOCK_PURCHASE_ORDERS = [
   {
     id: 1004,
     po_number: 'PO-2026-1004',
-    company_id: 1,
+    company_id: 5,
     title: 'Server Rack Tambahan',
     total_amount: 32000000,
     notes: '',
@@ -79,7 +79,7 @@ export const MOCK_PURCHASE_ORDERS = [
   {
     id: 1006,
     po_number: 'PO-2026-1006',
-    company_id: 1,
+    company_id: 4,
     title: 'Renovasi Pantry Kantor',
     total_amount: 9500000,
     notes: '',
@@ -92,7 +92,7 @@ export const MOCK_PURCHASE_ORDERS = [
   {
     id: 1007,
     po_number: 'PO-2026-1007',
-    company_id: 1,
+    company_id: 5,
     title: 'Pembelian Drone Survey',
     total_amount: 45000000,
     notes: 'Anggaran belum tersedia untuk kategori ini.',

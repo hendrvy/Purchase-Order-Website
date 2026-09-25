@@ -15,10 +15,20 @@ const (
 )
 
 type Company struct {
-	ID          uint           `json:"id" gorm:"primaryKey"`
-	Role        Roles          `json:"role" gorm:"type:varchar(50);not null;default:'user'" binding:"required,oneof=user validator admin"`
+	ID uint `json:"id" gorm:"primaryKey"`
+	// Role has no binding:"required" tag - Register (public) always
+	// overwrites it with RoleUser regardless of what's sent, and
+	// AdminCreateCompany defaults it to RoleUser when left blank. Keeping
+	// "required" here would reject BindJSON on any request that omits the
+	// field before either handler's own logic ever runs.
+	Role        Roles          `json:"role" gorm:"type:varchar(50);not null;default:'user'" binding:"omitempty,oneof=user validator admin"`
 	Username    string         `json:"username" binding:"required" gorm:"unique;not null"`
-	CompanyName string         `json:"company_name" binding:"required" gorm:"not null"`
+	// CompanyName has no binding:"required" tag - it IS required for
+	// public self-registration (see Register in auth_handlers.go, which
+	// enforces it manually) but is optional when an admin creates another
+	// admin account (see AdminCreateCompany in admin_handlers.go, which
+	// defaults it to the username when left blank).
+	CompanyName string `json:"company_name" gorm:"not null"`
 	Password    string         `json:"password,omitempty" gorm:"not null"`
 	Email       string         `json:"email" gorm:"unique;not null"`
 	Phone       string         `json:"phone"`
@@ -32,6 +42,10 @@ type PurchaseOrder struct {
 	ID          uint           `json:"id" gorm:"primaryKey"`
 	PONumber    string         `json:"po_number" gorm:"not null"`
 	CompanyID   uint           `json:"company_id" gorm:"not null"`
+	// Company - the requesting company, preloaded (without password, see
+	// stripPurchaseOrdersCompanyPassword) so validator/admin tables can
+	// display who submitted each PO without a second lookup.
+	Company     *Company       `json:"company,omitempty" gorm:"foreignKey:CompanyID;references:ID"`
 	Title       string         `json:"title" gorm:"not null"`
 	TotalAmount float64        `json:"total_amount" gorm:"not null;default:0"`
 	ResiNumber  string         `json:"resi_number"`
@@ -112,19 +126,24 @@ type DownloadLog struct {
 }
 
 type PasswordChange struct {
-	ID        uint      `json:"id" gorm:"primaryKey"`
-	UserID    uint      `json:"user_id" gorm:"not null"`
-	ChangedAt time.Time `json:"changed_at"`
+	ID     uint `json:"id" gorm:"primaryKey"`
+	UserID uint `json:"user_id" gorm:"not null"`
+	// ChangedAt needs gorm:"autoCreateTime" because GORM only
+	// auto-populates timestamp fields literally named CreatedAt/UpdatedAt
+	// by convention - any other field name (like ChangedAt here) is left
+	// as the Go zero value (0001-01-01) unless explicitly tagged.
+	ChangedAt time.Time `json:"changed_at" gorm:"autoCreateTime"`
 	IPAddress string    `json:"ip_address"`
 }
 
 type ProfileChange struct {
-	ID        uint      `json:"id" gorm:"primaryKey"`
-	UserID    uint      `json:"user_id" gorm:"not null"`
-	FieldName string    `json:"field_name" gorm:"not null"`
-	OldValue  string    `json:"old_value"`
-	NewValue  string    `json:"new_value"`
-	ChangedAt time.Time `json:"changed_at"`
+	ID        uint   `json:"id" gorm:"primaryKey"`
+	UserID    uint   `json:"user_id" gorm:"not null"`
+	FieldName string `json:"field_name" gorm:"not null"`
+	OldValue  string `json:"old_value"`
+	NewValue  string `json:"new_value"`
+	// See PasswordChange.ChangedAt above for why autoCreateTime is needed.
+	ChangedAt time.Time `json:"changed_at" gorm:"autoCreateTime"`
 	IPAddress string    `json:"ip_address"`
 }
 

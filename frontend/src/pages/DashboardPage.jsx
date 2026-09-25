@@ -1,12 +1,16 @@
 import { useAuth } from '@/context/AuthContext.jsx'
 import { usePurchaseOrdersQuery } from '@/hooks/usePurchaseOrdersQuery.js'
+import { useCompaniesQuery } from '@/hooks/useCompaniesQuery.js'
 import { SummaryCards } from '@/components/dashboard/SummaryCards.jsx'
+import { UserRoleSummaryCards } from '@/components/dashboard/UserRoleSummaryCards.jsx'
 import { StatusDistributionChart } from '@/components/dashboard/StatusDistributionChart.jsx'
 import { RecentOrdersCard } from '@/components/dashboard/RecentOrdersCard.jsx'
 
 export function DashboardPage() {
   const { user } = useAuth()
+  const isAdmin = user?.role === 'admin'
   const { data: orders = [], isLoading, isError, error } = usePurchaseOrdersQuery()
+  const { data: companies = [] } = useCompaniesQuery(undefined, { enabled: isAdmin })
 
   return (
     <section className="space-y-6">
@@ -27,6 +31,8 @@ export function DashboardPage() {
 
       {!isLoading && !isError && (
         <>
+          {isAdmin && <UserRoleSummaryCards companies={companies} />}
+
           <SummaryCards orders={orders} />
 
           <div className="grid gap-6 lg:grid-cols-2">

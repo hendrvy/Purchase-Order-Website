@@ -184,8 +184,14 @@ func Register(c *gin.Context) {
 
 	company := registReq.Company
 
+	// Public self-registration always creates a plain "user" account.
+	// Never trust a role value coming from an unauthenticated request -
+	// validator/admin accounts must be created by an existing admin via
+	// POST /api/companies (see AdminCreateCompany).
+	company.Role = RoleUser
+
 	// Validate required fields
-	if company.Username == "" || company.Password == "" || company.CompanyName == "" || company.Email == "" || company.Role == "" {
+	if company.Username == "" || company.Password == "" || company.CompanyName == "" || company.Email == "" {
 		c.JSON(http.StatusBadRequest, JsonResponse{
 			Status:  http.StatusBadRequest,
 			Message: "Missing required fields",

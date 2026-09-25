@@ -4,15 +4,29 @@ import (
 	"fmt"
 )
 
+// stripPurchaseOrdersCompanyPassword - Clear the hashed password off each
+// preloaded PurchaseOrder.Company before returning to a handler, since
+// these POs are serialized straight to JSON (validator/admin PO tables
+// need the requesting company's name, not its credentials).
+func stripPurchaseOrdersCompanyPassword(purchaseOrders []PurchaseOrder) {
+	for i := range purchaseOrders {
+		if purchaseOrders[i].Company != nil {
+			purchaseOrders[i].Company.Password = ""
+		}
+	}
+}
+
 // GetAllPurchaseOrdersDB - Get all purchase orders from database
 func GetAllPurchaseOrdersDB(page int, limit int) ([]PurchaseOrder, error) {
 	var purchaseOrder []PurchaseOrder
 
-	result := DB.Preload("Attachments").Where("deleted_at IS NULL").Offset((page - 1) * limit).Limit(limit).Find(&purchaseOrder)
+	result := DB.Preload("Attachments").Preload("Company").Where("deleted_at IS NULL").Offset((page - 1) * limit).Limit(limit).Find(&purchaseOrder)
 
 	if result.Error != nil {
 		return nil, result.Error
 	}
+
+	stripPurchaseOrdersCompanyPassword(purchaseOrder)
 
 	return purchaseOrder, nil
 }
@@ -23,10 +37,14 @@ func GetPurchaseOrderByIDDB(id uint) (*PurchaseOrder, error) {
 
 	var poByID PurchaseOrder
 
-	result := DB.Preload("Attachments").First(&poByID, id)
+	result := DB.Preload("Attachments").Preload("Company").First(&poByID, id)
 
 	if result.Error != nil {
 		return nil, result.Error
+	}
+
+	if poByID.Company != nil {
+		poByID.Company.Password = ""
 	}
 
 	return &poByID, nil
@@ -87,11 +105,13 @@ func GetPurchaseOrdersByCompanyDB(companyID uint) ([]PurchaseOrder, error) {
 	fmt.Printf("Getting purchase orders for company ID: %d\n", companyID)
 
 	var poByCompany []PurchaseOrder
-	result := DB.Preload("Attachments").Where("company_id = ? AND deleted_at IS NULL", companyID).Find(&poByCompany)
+	result := DB.Preload("Attachments").Preload("Company").Where("company_id = ? AND deleted_at IS NULL", companyID).Find(&poByCompany)
 
 	if result.Error != nil {
 		return nil, result.Error
 	}
+
+	stripPurchaseOrdersCompanyPassword(poByCompany)
 
 	return poByCompany, nil
 }
@@ -212,6 +232,41 @@ func UpdateCompanyDB(id uint, company *Company) error {
 		return result.Error
 	}
 
+	return nil
+}
+
+// GetAllCompaniesDB - Get all companies (users), optionally filtered by
+// role and/or a case-insensitive search across username/company_name/email.
+func GetAllCompaniesDB(role string, search string) ([]Company, error) {
+	var companies []Company
+	query := DB.Model(&Company{})
+
+	if role != "" {
+		query = query.Where("role = ?", role)
+	}
+
+	if search != "" {
+		like := "%" + search + "%"
+		query = query.Where("username ILIKE ? OR company_name ILIKE ? OR email ILIKE ?", like, like, like)
+	}
+
+	result := query.Order("created_at DESC").Find(&companies)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return companies, nil
+}
+
+// UpdateCompanyRoleDB - Update just the role of a company
+func UpdateCompanyRoleDB(id uint, role string) error {
+	result := DB.Model(&Company{}).Where("id = ?", id).Update("role", role)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("company not found")
+	}
 	return nil
 }
 
@@ -356,4 +411,38 @@ func CreateProfileChangeLog(log *ProfileChange) error {
 		return result.Error
 	}
 	return nil
+}
+
+// ============================================================================
+// AUDIT LOG QUERY HELPERS (admin activity log page)
+// ============================================================================
+
+// GetAllProfileChangesDB - List profile change audit entries, most recent first
+func GetAllProfileChangesDB(limit int) ([]ProfileChange, error) {
+	var logs []ProfileChange
+	result := DB.Order("changed_at DESC").Limit(limit).Find(&logs)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return logs, nil
+}
+
+// GetAllPasswordChangesDB - List password change audit entries, most recent first
+func GetAllPasswordChangesDB(limit int) ([]PasswordChange, error) {
+	var logs []PasswordChange
+	result := DB.Order("changed_at DESC").Limit(limit).Find(&logs)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return logs, nil
+}
+
+// GetAllDownloadLogsDB - List file download audit entries, most recent first
+func GetAllDownloadLogsDB(limit int) ([]DownloadLog, error) {
+	var logs []DownloadLog
+	result := DB.Order("created_at DESC").Limit(limit).Find(&logs)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return logs, nil
 }

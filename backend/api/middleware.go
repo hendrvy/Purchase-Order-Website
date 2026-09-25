@@ -76,6 +76,23 @@ func AuthMiddleware() gin.HandlerFunc {
 	}
 }
 
+// RequireAdmin - Middleware yang membatasi akses hanya untuk role "admin".
+// Harus dipasang setelah AuthMiddleware (butuh context "role" sudah di-set).
+func RequireAdmin() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if c.GetString("role") != string(RoleAdmin) {
+			c.JSON(http.StatusForbidden, JsonResponse{
+				Status:  http.StatusForbidden,
+				Error:   "Access denied",
+				Message: "Only admins can access this resource",
+			})
+			c.Abort()
+			return
+		}
+		c.Next()
+	}
+}
+
 // CORSMiddleware - Middleware untuk CORS
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {

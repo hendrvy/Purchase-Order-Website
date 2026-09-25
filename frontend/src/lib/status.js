@@ -97,3 +97,15 @@ export function getAllowedTransitions(status, role) {
 export function canTransition(status, target, role) {
   return TRANSITION_RULES[status]?.[target]?.includes(role) ?? false
 }
+
+/**
+ * Whether moving a PO to the given target status requires a resi
+ * (tracking) number to be supplied. Mirrors the backend check in
+ * backend/api/purchase_order_handlers.go UpdatePurchaseOrderStatus.
+ *
+ * @param {POStatus} targetStatus
+ * @returns {boolean}
+ */
+export function requiresResiNumber(targetStatus) {
+  return targetStatus === 'shipping'
+}

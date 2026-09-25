@@ -131,7 +131,7 @@ export function ProfilePage() {
       <h1 className="text-xl font-semibold text-gray-900">My Profile</h1>
       <p className="mt-1 text-sm text-gray-400">Kelola informasi profil dan password Anda.</p>
 
-      <div className="mt-6 max-w-2xl space-y-6">
+      <div className="mt-6 max-w-2xl space-y-6 m-auto">
         {/* Photo + identity summary */}
         <Card>
           <CardContent className="flex items-center gap-4">
