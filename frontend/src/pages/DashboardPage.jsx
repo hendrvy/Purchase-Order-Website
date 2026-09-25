@@ -32,9 +32,22 @@ export function DashboardPage() {
 
       {!isLoading && !isError && (
         <>
-          {isAdmin && <UserRoleSummaryCards companies={companies} />}
+          {isAdmin && (
+            <div className="space-y-3">
+              <h2 className="text-sm font-semibold text-gray-700">1. Informasi Akun</h2>
+              <UserRoleSummaryCards companies={companies} />
+            </div>
+          )}
 
-          <SummaryCards orders={orders} />
+          <div className="space-y-3">
+            {/* Numbering shifts to "1." when the admin-only Informasi Akun
+                section above isn't rendered, so the sections stay
+                sequentially numbered regardless of role. */}
+            <h2 className="text-sm font-semibold text-gray-700">
+              {isAdmin ? '2' : '1'}. Informasi PO
+            </h2>
+            <SummaryCards orders={orders} />
+          </div>
 
           <div className="grid gap-6 lg:grid-cols-2">
             <StatusDistributionChart orders={orders} />
