@@ -3,25 +3,30 @@
  */
 
 /**
+ * Matches the backend `Company` model (backend/api/models.go) - the
+ * backend has no separate "user" concept, a Company row IS the account.
+ *
  * @typedef {Object} User
- * @property {string} id
+ * @property {number} id
+ * @property {string} username
+ * @property {string} company_name
  * @property {string} email
- * @property {string} full_name
+ * @property {string} [phone]
+ * @property {string} [photo_path] - Filename on disk; build a viewable URL via GET /api/companies/:id/photo.
  * @property {Role} role
- * @property {boolean} is_active
- * @property {string} created_at
- * @property {string} updated_at
+ * @property {string} [created_at]
+ * @property {string} [updated_at]
  */
 
 /**
- * Payload returned by POST /api/login (or GET /api/me) alongside a token.
+ * Payload returned by POST /api/login alongside a token.
  *
  * @typedef {User} AuthUser
  */
 
 /**
  * @typedef {Object} LoginCredentials
- * @property {string} email
+ * @property {string} username
  * @property {string} password
  */
 

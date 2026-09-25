@@ -1,20 +1,16 @@
 /**
+ * Matches the backend `Attachment` model (backend/api/models.go). A
+ * purchase order can have many attachments (many-to-many via the
+ * `purchase_order_attachments` join table), so this shape has no `po_id` -
+ * attachments are only ever seen nested inside a `PurchaseOrder.attachments`
+ * array or as the response of a standalone upload.
+ *
  * @typedef {Object} Attachment
- * @property {string} id
- * @property {string} po_id
- * @property {string} uploaded_by
- * @property {string} [uploaded_by_name]
- * @property {string} original_filename
- * @property {string} url - URL or path the frontend can use to view/download the file.
+ * @property {number} id
+ * @property {string} filename
+ * @property {string} filepath
  * @property {string} mime_type
- * @property {number} file_size
  * @property {string} created_at
- */
-
-/**
- * @typedef {Object} UploadAttachmentInput
- * @property {string} po_id
- * @property {File} file
  */
 
 export {}

@@ -1,20 +1,22 @@
 /**
- * User roles supported by the application.
+ * User roles supported by the application. Matches the backend `Roles`
+ * enum exactly (backend/api/models.go).
  *
- * - buyer:    creates and submits purchase orders
- * - approver: reviews and decides (approve/reject) submitted purchase orders
- * - admin:    manages users and has full visibility/control over all purchase orders
+ * - user:      creates and submits purchase orders for their own company
+ * - validator: reviews purchase orders and updates their status; can see
+ *              purchase orders across all companies
+ * - admin:     full visibility/control over all purchase orders and companies
  *
- * @typedef {'buyer' | 'approver' | 'admin'} Role
+ * @typedef {'user' | 'validator' | 'admin'} Role
  */
 
 /** @type {readonly Role[]} */
-export const ROLES = ['buyer', 'approver', 'admin']
+export const ROLES = ['user', 'validator', 'admin']
 
 /** @type {Record<Role, string>} */
 export const ROLE_LABELS = {
-  buyer: 'Buyer',
-  approver: 'Approver',
+  user: 'User',
+  validator: 'Validator',
   admin: 'Admin',
 }
 

@@ -7,7 +7,7 @@ import { useLoginMutation } from '@/hooks/useLoginMutation.js'
 import { Button } from '@/components/ui/button.jsx'
 
 const loginSchema = z.object({
-  email: z.string().min(1, 'Email wajib diisi.').email('Format email tidak valid.'),
+  username: z.string().min(1, 'Username wajib diisi.'),
   password: z.string().min(6, 'Password minimal 6 karakter.'),
 })
 
@@ -23,7 +23,7 @@ export function LoginPage() {
     formState: { errors },
   } = useForm({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '' },
+    defaultValues: { username: '', password: '' },
   })
 
   // Already logged in - don't show the login form again.
@@ -75,26 +75,26 @@ export function LoginPage() {
         noValidate
       >
 
-        {/* Email */}
+        {/* Username */}
         <div>
           <label
-            htmlFor="email"
+            htmlFor="username"
             className="block text-sm font-medium text-gray-700"
           >
-            Email
+            Username
           </label>
 
           <input
-            id="email"
-            type="email"
-            autoComplete="email"
+            id="username"
+            type="text"
+            autoComplete="username"
             className="mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-[#D97745] focus:outline-none focus:ring-1 focus:ring-[#D97745]"
-            {...register('email')}
+            {...register('username')}
           />
 
-          {errors.email && (
+          {errors.username && (
             <p className="mt-1 text-xs text-red-600">
-              {errors.email.message}
+              {errors.username.message}
             </p>
           )}
         </div>

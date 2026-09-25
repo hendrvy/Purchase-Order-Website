@@ -4,13 +4,18 @@
 -- ============================================================================
 -- COMPANIES TABLE
 -- ============================================================================
+
+CREATE TYPE roles AS ENUM ('user', 'validator', 'admin');
+
 CREATE TABLE IF NOT EXISTS companies (
     id SERIAL PRIMARY KEY,
+    role roles NOT NULL DEFAULT 'user',
     username VARCHAR(255) UNIQUE NOT NULL,
     company_name VARCHAR(255) NOT NULL,
     password VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     phone VARCHAR(20),
+    photo_path VARCHAR(500),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP  -- NULL = active, timestamp = soft deleted
@@ -48,22 +53,19 @@ CREATE TABLE IF NOT EXISTS purchase_orders (
     id SERIAL PRIMARY KEY,
     po_number VARCHAR(50) UNIQUE NOT NULL,
     company_id INTEGER NOT NULL,
-    attachment_id INTEGER NOT NULL,
+    title VARCHAR(150) NOT NULL,
+    total_amount NUMERIC(15, 2) NOT NULL DEFAULT 0,
     resi_number VARCHAR(30) DEFAULT NULL,
+    notes VARCHAR(255) DEFAULT NULL,
     status VARCHAR(50) DEFAULT 'verifying' CHECK (status IN ('verifying','process', 'shipping', 'complete', 'rejected')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP,  -- NULL = active, timestamp = soft deleted
-    
+
     -- Foreign key constraints (NO CASCADE - prevents accidental deletion)
-    CONSTRAINT fk_purchase_orders_company 
-        FOREIGN KEY (company_id) 
-        REFERENCES companies(id) 
-        ON DELETE RESTRICT,
-    
-    CONSTRAINT fk_purchase_orders_attachment 
-        FOREIGN KEY (attachment_id) 
-        REFERENCES attachments(id) 
+    CONSTRAINT fk_purchase_orders_company
+        FOREIGN KEY (company_id)
+        REFERENCES companies(id)
         ON DELETE RESTRICT
 );
 
@@ -78,6 +80,30 @@ CREATE INDEX IF NOT EXISTS idx_purchase_orders_status ON purchase_orders(status)
 
 -- Composite index for common query: find POs for a specific company with a specific status
 CREATE INDEX IF NOT EXISTS idx_purchase_orders_company_status ON purchase_orders(company_id, status) WHERE deleted_at IS NULL;
+
+-- ============================================================================
+-- PURCHASE_ORDER_ATTACHMENTS TABLE (many-to-many join table)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS purchase_order_attachments (
+    purchase_order_id INTEGER NOT NULL,
+    attachment_id INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (purchase_order_id, attachment_id),
+
+    CONSTRAINT fk_poa_purchase_order
+        FOREIGN KEY (purchase_order_id)
+        REFERENCES purchase_orders(id)
+        ON DELETE RESTRICT,
+
+    CONSTRAINT fk_poa_attachment
+        FOREIGN KEY (attachment_id)
+        REFERENCES attachments(id)
+        ON DELETE RESTRICT
+);
+
+CREATE INDEX IF NOT EXISTS idx_poa_purchase_order_id ON purchase_order_attachments(purchase_order_id);
+CREATE INDEX IF NOT EXISTS idx_poa_attachment_id ON purchase_order_attachments(attachment_id);
 
 -- ============================================================================
 -- HELPER FUNCTIONS
@@ -113,6 +139,76 @@ CREATE TRIGGER trigger_purchase_orders_updated_at
 BEFORE UPDATE ON purchase_orders
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
+
+-- ============================================================================
+-- DOWNLOAD LOGS TABLE
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS download_logs (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    attachment_id INTEGER NOT NULL,
+    po_id INTEGER NOT NULL,
+    ip_address VARCHAR(45),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_download_logs_user 
+        FOREIGN KEY (user_id) 
+        REFERENCES companies(id) 
+        ON DELETE RESTRICT,
+    
+    CONSTRAINT fk_download_logs_attachment 
+        FOREIGN KEY (attachment_id) 
+        REFERENCES attachments(id) 
+        ON DELETE RESTRICT,
+    
+    CONSTRAINT fk_download_logs_po 
+        FOREIGN KEY (po_id) 
+        REFERENCES purchase_orders(id) 
+        ON DELETE RESTRICT
+);
+
+CREATE INDEX IF NOT EXISTS idx_download_logs_user_id ON download_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_download_logs_attachment_id ON download_logs(attachment_id);
+CREATE INDEX IF NOT EXISTS idx_download_logs_created_at ON download_logs(created_at);
+
+-- ============================================================================
+-- PASSWORD CHANGES TABLE
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS password_changes (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ip_address VARCHAR(45),
+    
+    CONSTRAINT fk_password_changes_user 
+        FOREIGN KEY (user_id) 
+        REFERENCES companies(id) 
+        ON DELETE RESTRICT
+);
+
+CREATE INDEX IF NOT EXISTS idx_password_changes_user_id ON password_changes(user_id);
+CREATE INDEX IF NOT EXISTS idx_password_changes_changed_at ON password_changes(changed_at);
+
+-- ============================================================================
+-- PROFILE CHANGES TABLE
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS profile_changes (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    field_name VARCHAR(50) NOT NULL,
+    old_value VARCHAR(500),
+    new_value VARCHAR(500),
+    changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ip_address VARCHAR(45),
+    
+    CONSTRAINT fk_profile_changes_user 
+        FOREIGN KEY (user_id) 
+        REFERENCES companies(id) 
+        ON DELETE RESTRICT
+);
+
+CREATE INDEX IF NOT EXISTS idx_profile_changes_user_id ON profile_changes(user_id);
+CREATE INDEX IF NOT EXISTS idx_profile_changes_changed_at ON profile_changes(changed_at);
 
 -- ============================================================================
 -- SAMPLE QUERIES FOR REFERENCE
