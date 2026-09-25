@@ -1,3 +1,4 @@
+import { AlertCircle, CheckCircle2, ClipboardList, Loader } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card.jsx'
 
 /**
@@ -43,6 +44,14 @@ function countNeedsAction(orders) {
     .length
 }
 
+/** Icon + color tint per card, keyed by item label. */
+const ICON_STYLES = {
+  'Total PO': { icon: ClipboardList, bg: 'bg-gray-100', color: 'text-gray-600' },
+  'Need Approval': { icon: AlertCircle, bg: 'bg-blue-50', color: 'text-blue-600' },
+  'On Progress': { icon: Loader, bg: 'bg-amber-50', color: 'text-amber-600' },
+  Completed: { icon: CheckCircle2, bg: 'bg-green-50', color: 'text-green-600' },
+}
+
 /**
  * @param {{ orders: PurchaseOrder[] }} props
  */
@@ -56,14 +65,25 @@ export function SummaryCards({ orders }) {
 
   return (
     <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-      {items.map((item) => (
-        <Card key={item.label}>
-          <CardContent>
-            <p className="text-sm text--500">{item.label}</p>
-            <p className="mt-1 text-2xl font-semibold text-gray-700 underline underline-offset-4 decoration-red-700">{item.value}</p>
-          </CardContent>
-        </Card>
-      ))}
+      {items.map((item) => {
+        const { icon: Icon, bg, color } = ICON_STYLES[item.label]
+
+        return (
+          <Card key={item.label}>
+            <CardContent className="flex items-start gap-3">
+              <span
+                className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full ${bg} ${color}`}
+              >
+                <Icon size={18} />
+              </span>
+              <div>
+                <p className="text-sm text-gray-500">{item.label}</p>
+                <p className="mt-1 text-2xl font-semibold text-gray-700">{item.value}</p>
+              </div>
+            </CardContent>
+          </Card>
+        )
+      })}
     </div>
   )
 }

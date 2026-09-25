@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card.jsx'
 import { Button } from '@/components/ui/button.jsx'
 import { useAuth } from '@/context/AuthContext.jsx'
 import { formatDate } from '@/lib/format.js'
-import { ASSIGNABLE_ROLES, ROLES, ROLE_LABELS } from '@/types/role.js'
+import { ASSIGNABLE_ROLES, ROLE_LABELS } from '@/types/role.js'
 import { useCompaniesQuery } from '@/hooks/useCompaniesQuery.js'
 import { useUpdateCompanyRoleMutation } from '@/hooks/useUpdateCompanyRoleMutation.js'
 import { AddAccountModal } from '@/components/admin/AddAccountModal.jsx'
@@ -73,7 +73,7 @@ export function UserManagementPage() {
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap gap-2">
-          {['all', ...ROLES].map((role) => {
+          {['all', ...ASSIGNABLE_ROLES].map((role) => {
             const isActive = roleFilter === role
             const label = role === 'all' ? 'Semua' : ROLE_LABELS[role]
 
