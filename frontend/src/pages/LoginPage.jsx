@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
-import { Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import { useAuth } from '@/context/AuthContext.jsx'
 import { useLoginMutation } from '@/hooks/useLoginMutation.js'
@@ -11,10 +11,14 @@ const loginSchema = z.object({
   password: z.string().min(6, 'Password minimal 6 karakter.'),
 })
 
+// Login always drops the user on /dashboard - it intentionally does NOT
+// send them back to whatever protected page they originally tried to
+// visit (no `location.state.from` handling here), per product decision.
+const DASHBOARD_PATH = '/dashboard'
+
 export function LoginPage() {
   const { user, token } = useAuth()
   const navigate = useNavigate()
-  const location = useLocation()
   const mutation = useLoginMutation()
 
   const {
@@ -28,15 +32,13 @@ export function LoginPage() {
 
   // Already logged in - don't show the login form again.
   if (token && user) {
-    const redirectTo = location.state?.from?.pathname ?? '/dashboard'
-    return <Navigate to={redirectTo} replace />
+    return <Navigate to={DASHBOARD_PATH} replace />
   }
 
   const onSubmit = (values) => {
     mutation.mutate(values, {
       onSuccess: () => {
-        const redirectTo = location.state?.from?.pathname ?? '/dashboard'
-        navigate(redirectTo, { replace: true })
+        navigate(DASHBOARD_PATH, { replace: true })
       },
     })
   }

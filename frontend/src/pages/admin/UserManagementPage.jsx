@@ -118,12 +118,34 @@ export function UserManagementPage() {
         <Card className="py-0">
           <CardContent className="px-0">
             {companies.length === 0 ? (
-              <p className="px-5 py-6 text-center text-sm text-gray-400">
+              <div className="w-[1360px] max-w-full px-5 py-6 text-center text-sm text-gray-400">
                 Tidak ada user yang cocok dengan filter ini.
-              </p>
+              </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[760px] text-left text-sm">
+                {/* Same fixed-width-column approach as HistoryTable.jsx -
+                    see the comments there for the full rationale. In
+                    short: table-fixed + explicit <colgroup> widths keep
+                    every column a consistent width regardless of which
+                    row data happens to be visible (filter/search change,
+                    long names, etc.), and a fixed `w-[1360px]` (matching
+                    the colgroup sum exactly, reused on the empty state
+                    above) stops the table/Card from stretching to fill a
+                    wider container or shrinking to fit a short "no
+                    results" message. Perusahaan/Email wrap onto a second
+                    line instead of truncating with '...' once they no
+                    longer fit; Username/Telepon/Terdaftar stay single-line
+                    since those values are always short in practice. */}
+                <table className="w-[1360px] table-fixed text-left text-sm">
+                  <colgroup>
+                    <col className="w-40" />
+                    <col className="w-64" />
+                    <col className="w-72" />
+                    <col className="w-40" />
+                    <col className="w-44" />
+                    <col className="w-36" />
+                    <col className="w-44" />
+                  </colgroup>
                   <thead>
                     <tr className="border-b border-gray-100 text-xs font-medium text-gray-500">
                       <th className="px-5 py-3">Username</th>
@@ -145,23 +167,27 @@ export function UserManagementPage() {
 
                       return (
                         <tr key={company.id} className="align-top hover:bg-gray-50">
-                          <td className="px-5 py-3 font-medium text-gray-900 whitespace-nowrap">
-                            {company.username}
+                          <td className="overflow-hidden px-5 py-3 font-medium text-gray-900">
+                            <span className="block w-full min-w-0 truncate">
+                              {company.username}
+                            </span>
                           </td>
-                          <td className="max-w-[180px] px-5 py-3 text-gray-700">
-                            <p className="truncate" title={company.company_name}>
+                          <td className="px-5 py-3 text-gray-700">
+                            <span className="block w-full break-words whitespace-normal">
                               {company.company_name}
-                            </p>
+                            </span>
                           </td>
-                          <td className="max-w-[200px] px-5 py-3 text-gray-700">
-                            <p className="truncate" title={company.email}>
+                          <td className="px-5 py-3 text-gray-700">
+                            <span className="block w-full break-words whitespace-normal">
                               {company.email}
-                            </p>
+                            </span>
                           </td>
-                          <td className="px-5 py-3 whitespace-nowrap text-gray-700">
-                            {company.phone || <span className="text-gray-400">-</span>}
+                          <td className="overflow-hidden px-5 py-3 text-gray-700">
+                            <span className="block w-full min-w-0 truncate">
+                              {company.phone || <span className="text-gray-400">-</span>}
+                            </span>
                           </td>
-                          <td className="px-5 py-3 whitespace-nowrap">
+                          <td className="px-5 py-3">
                             {isSuperAdmin ? (
                               <span
                                 className="inline-flex items-center rounded-[20px] border border-[#B00100] bg-red-50 px-3 py-1 text-xs font-medium text-[#B00100]"
@@ -185,10 +211,12 @@ export function UserManagementPage() {
                               </select>
                             )}
                           </td>
-                          <td className="px-5 py-3 whitespace-nowrap text-gray-500">
-                            {company.created_at ? formatDate(company.created_at) : '-'}
+                          <td className="overflow-hidden px-5 py-3 text-gray-500">
+                            <span className="block w-full min-w-0 truncate">
+                              {company.created_at ? formatDate(company.created_at) : '-'}
+                            </span>
                           </td>
-                          <td className="px-5 py-3 whitespace-nowrap">
+                          <td className="overflow-hidden px-5 py-3">
                             {isSuperAdmin ? (
                               <span
                                 className="text-xs text-gray-400"

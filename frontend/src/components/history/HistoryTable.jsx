@@ -34,16 +34,54 @@ export function HistoryTable({ orders }) {
     (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
   )
 
+  // Fixed table width (see the <table> comment below for why it's a fixed
+  // px value rather than `w-full`). Reused on the empty state below too -
+  // otherwise the Card would shrink to fit the short "no results" message
+  // whenever a filter/search produces zero rows, then jump back wide again
+  // once results return, which reads exactly like "the table width keeps
+  // changing" even though the table itself never resizes.
+  // Must equal the exact sum of the <colgroup> widths below: No.PO(176) +
+  // [Perusahaan(192) +] Judul(320) + No.Resi(160) + Total(144) +
+  // Status(160) + File(192) + Diperbarui(144).
+  const tableWidthClass = showCompanyColumn ? 'w-[1488px]' : 'w-[1296px]'
+
   return (
     <Card className="py-0">
       <CardContent className="px-0">
         {sortedOrders.length === 0 ? (
-          <p className="px-5 py-6 text-center text-sm text-gray-400">
+          <div className={`${tableWidthClass} max-w-full px-5 py-6 text-center text-sm text-gray-400`}>
             Belum ada purchase order dengan status ini.
-          </p>
+          </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[820px] text-left text-sm">
+            {/* table-fixed + explicit per-column widths (set once via
+                <colgroup>) keep every column the same width regardless of
+                cell content - without this, the default auto layout
+                re-measures column widths off whatever row data happens to
+                be visible (long filenames, long titles, the status
+                dropdown opening, etc.), making the whole table visibly
+                resize/jump as data changes.
+                Deliberately NOT `w-full`: the table's width is set to the
+                exact sum of its <col> widths below (see tableWidthClass
+                above), so it never stretches to fill a wider container. If it did
+                (e.g. w-full with only a min-width), the browser would
+                redistribute any leftover space unevenly across columns
+                whenever the container's available width changed slightly
+                (which happens on every filter/search change, since a
+                different row count can toggle the page's vertical
+                scrollbar on/off) - producing the exact width "jumping"
+                this is meant to prevent. */}
+            <table className={`table-fixed text-left text-sm ${tableWidthClass}`}>
+              <colgroup>
+                <col className="w-44" />
+                {showCompanyColumn && <col className="w-48" />}
+                <col className="w-80" />
+                <col className="w-40" />
+                <col className="w-36" />
+                <col className="w-40" />
+                <col className="w-48" />
+                <col className="w-36" />
+              </colgroup>
               <thead>
                 <tr className="border-b border-gray-100 text-xs font-medium text-gray-500">
                   <th className="px-5 py-3">No. PO</th>
@@ -59,40 +97,67 @@ export function HistoryTable({ orders }) {
               <tbody className="divide-y divide-gray-100">
                 {sortedOrders.map((order) => (
                   <tr key={order.id} className="align-top hover:bg-gray-50">
-                    <td className="px-5 py-3 font-medium text-gray-900 whitespace-nowrap">
-                      {order.po_number}
+                    {/* No. PO wraps onto a second line instead of being
+                        truncated - long PO numbers used to get cut off
+                        with an ellipsis at the old, narrower column width.
+                        `break-words whitespace-normal` lets it fall onto a
+                        second line within the same cell (the row just
+                        grows taller, via `align-top` on the <tr>), same
+                        pattern as Perusahaan/Judul/No. Resi/Diperbarui
+                        below. Total still stays single-line/truncated
+                        (formatted currency amounts are always short and
+                        right-aligned, so truncating reads better than
+                        wrapping). */}
+                    <td className="px-5 py-3 font-medium text-gray-900">
+                      <span className="block w-full break-words whitespace-normal">
+                        {order.po_number}
+                      </span>
                     </td>
+                    {/* Perusahaan/Judul/No. Resi/Diperbarui wrap instead of
+                        truncating: `whitespace-normal break-words` lets
+                        long values fall onto a second line within the
+                        same cell (the row just grows taller, via
+                        `align-top` on the <tr>) rather than being cut off
+                        with an ellipsis. No `min-w-0`/`overflow-hidden`
+                        needed here since wrapped text never exceeds the
+                        column's width in the first place. */}
                     {showCompanyColumn && (
-                      <td className="max-w-[180px] px-5 py-3 text-gray-700">
-                        <p className="truncate" title={order.company?.company_name}>
+                      <td className="px-5 py-3 text-gray-700">
+                        <span className="block w-full break-words whitespace-normal">
                           {order.company?.company_name || (
                             <span className="text-gray-400">-</span>
                           )}
-                        </p>
+                        </span>
                       </td>
                     )}
-                    <td className="max-w-[220px] px-5 py-3 text-gray-700">
-                      <p className="truncate" title={order.title}>
+                    <td className="px-5 py-3 text-gray-700">
+                      <span className="block w-full break-words whitespace-normal">
                         {order.title}
-                      </p>
+                      </span>
                     </td>
-                    <td className="px-5 py-3 whitespace-nowrap text-gray-700">
-                      {order.resi_number || <span className="text-gray-400">-</span>}
+                    <td className="px-5 py-3 text-gray-700">
+                      <span className="block w-full break-words whitespace-normal">
+                        {order.resi_number || <span className="text-gray-400">-</span>}
+                      </span>
                     </td>
-                    <td className="px-5 py-3 text-right whitespace-nowrap text-gray-900">
-                      {formatCurrency(order.total_amount)}
+                    <td className="overflow-hidden px-5 py-3 text-right text-gray-900">
+                      <span className="block w-full min-w-0 truncate">
+                        {formatCurrency(order.total_amount)}
+                      </span>
                     </td>
-                    <td className="px-5 py-3 whitespace-nowrap">
+                    <td className="overflow-hidden px-5 py-3">
                       <POStatusUpdateControl order={order} role={user?.role} />
                     </td>
-                    <td className="px-5 py-3">
+                    <td className="overflow-hidden px-5 py-3">
                       <AttachmentThumbnailList
                         attachments={order.attachments}
                         onPreview={setPreviewAttachment}
                       />
                     </td>
-                    <td className="px-5 py-3 whitespace-nowrap text-gray-500">
-                      {formatDate(order.updated_at)}
+                    <td className="px-5 py-3 text-gray-500">
+                      <span className="block w-full break-words whitespace-normal">
+                        {formatDate(order.updated_at)}
+                      </span>
                     </td>
                   </tr>
                 ))}

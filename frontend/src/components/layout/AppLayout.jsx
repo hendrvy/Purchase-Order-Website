@@ -49,8 +49,17 @@ export function AppLayout() {
   return (
     <div className="flex min-h-screen bg-gray-50">
 
-      {/* Sidebar */}
-      <aside className="flex w-64 flex-shrink-0 flex-col bg-white">
+      {/* Sidebar - `sticky top-0 h-screen` keeps it pinned to the viewport
+          with its own fixed height, independent of how tall <main>'s
+          content is. Without this, the sidebar (a flex item) stretches to
+          match the height of the tallest sibling (main), so on long pages
+          the whole <aside> - including the `mt-auto` profile section at
+          its bottom - grows taller and the profile dropdown ends up
+          rendered far down the page instead of staying anchored near the
+          bottom of the visible screen. `overflow-y-auto` lets the nav
+          links scroll internally on short viewports instead of pushing
+          the profile section off-screen. */}
+      <aside className="sticky top-0 flex h-screen w-64 flex-shrink-0 flex-col overflow-y-auto bg-white">
 
         {/* Logo */}
         <div className="px-6 py-6 text-center">

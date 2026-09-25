@@ -1,6 +1,46 @@
 /**
  * @import { PurchaseOrder } from '@/types/po.js'
+ * @import { Attachment } from '@/types/attachment.js'
  */
+
+/**
+ * Builds `count` dummy attachments for the static mock PO list below (used
+ * to exercise AttachmentThumbnailList's layout - e.g. the "+N" popover
+ * only shows up once a PO has more than MAX_VISIBLE_ICONS attachments).
+ * `filepath` doesn't need to be a real/loadable URL here: in mock mode
+ * (VITE_USE_MOCKS=true), api/attachments.js's loadAttachmentPreviewUrl
+ * returns `attachment.filepath` as-is without ever fetching it, so these
+ * are only used to render the file icon/name, not an actual preview.
+ *
+ * @param {number} poId
+ * @param {number} count
+ * @returns {Attachment[]}
+ */
+function buildDummyAttachments(poId, count) {
+  const names = [
+    'invoice-pembelian.pdf',
+    'foto-barang-1.jpg',
+    'foto-barang-2.jpg',
+    'surat-jalan.pdf',
+    'nota-pembayaran.png',
+    'spesifikasi-teknis.pdf',
+    'foto-barang-3.jpg',
+    'kwitansi.pdf',
+    'foto-lokasi.jpg',
+    'dokumen-pendukung.pdf',
+  ]
+
+  return Array.from({ length: count }, (_, index) => {
+    const filename = names[index % names.length]
+    return {
+      id: poId * 100 + index,
+      filename,
+      filepath: '',
+      mime_type: filename.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg',
+      created_at: '2026-09-18T02:00:00.000Z',
+    }
+  })
+}
 
 /**
  * Dummy purchase orders used by the dashboard/history pages when
@@ -20,7 +60,7 @@ export const MOCK_PURCHASE_ORDERS = [
     notes: '',
     status: 'verifying',
     resi_number: '',
-    attachments: [],
+    attachments: buildDummyAttachments(1001, 2),
     created_at: '2026-09-18T02:00:00.000Z',
     updated_at: '2026-09-18T02:00:00.000Z',
   },
@@ -33,7 +73,7 @@ export const MOCK_PURCHASE_ORDERS = [
     notes: '',
     status: 'verifying',
     resi_number: '',
-    attachments: [],
+    attachments: buildDummyAttachments(1002, 7),
     created_at: '2026-09-17T01:00:00.000Z',
     updated_at: '2026-09-19T04:30:00.000Z',
   },
@@ -46,7 +86,7 @@ export const MOCK_PURCHASE_ORDERS = [
     notes: '',
     status: 'process',
     resi_number: '',
-    attachments: [],
+    attachments: buildDummyAttachments(1003, 0),
     created_at: '2026-09-14T01:00:00.000Z',
     updated_at: '2026-09-16T02:00:00.000Z',
   },
@@ -59,7 +99,7 @@ export const MOCK_PURCHASE_ORDERS = [
     notes: '',
     status: 'shipping',
     resi_number: 'JNE-8827301',
-    attachments: [],
+    attachments: buildDummyAttachments(1004, 10),
     created_at: '2026-09-09T01:00:00.000Z',
     updated_at: '2026-09-20T05:00:00.000Z',
   },
@@ -72,7 +112,7 @@ export const MOCK_PURCHASE_ORDERS = [
     notes: '',
     status: 'complete',
     resi_number: '',
-    attachments: [],
+    attachments: buildDummyAttachments(1005, 1),
     created_at: '2026-08-30T01:00:00.000Z',
     updated_at: '2026-09-05T01:00:00.000Z',
   },
@@ -85,7 +125,7 @@ export const MOCK_PURCHASE_ORDERS = [
     notes: '',
     status: 'complete',
     resi_number: '',
-    attachments: [],
+    attachments: buildDummyAttachments(1006, 3),
     created_at: '2026-08-18T01:00:00.000Z',
     updated_at: '2026-08-25T01:00:00.000Z',
   },
@@ -98,7 +138,7 @@ export const MOCK_PURCHASE_ORDERS = [
     notes: 'Anggaran belum tersedia untuk kategori ini.',
     status: 'rejected',
     resi_number: '',
-    attachments: [],
+    attachments: buildDummyAttachments(1007, 0),
     created_at: '2026-09-04T01:00:00.000Z',
     updated_at: '2026-09-06T01:00:00.000Z',
   },
@@ -111,7 +151,7 @@ export const MOCK_PURCHASE_ORDERS = [
     notes: '',
     status: 'verifying',
     resi_number: '',
-    attachments: [],
+    attachments: buildDummyAttachments(1008, 4),
     created_at: '2026-09-11T01:00:00.000Z',
     updated_at: '2026-09-13T01:00:00.000Z',
   },
