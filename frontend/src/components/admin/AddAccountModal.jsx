@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button.jsx'
-import { ROLES, ROLE_LABELS } from '@/types/role.js'
+import { ASSIGNABLE_ROLES, ROLE_LABELS } from '@/types/role.js'
 import { useCreateCompanyMutation } from '@/hooks/useCreateCompanyMutation.js'
 
 // Company name is only mandatory for "user" accounts (they represent an
@@ -19,7 +19,9 @@ const accountSchema = z
     email: z.string().trim().min(1, 'Email wajib diisi.').email('Format email tidak valid.'),
     phone: z.string().trim().max(20, 'Maksimal 20 karakter.').optional().or(z.literal('')),
     password: z.string().min(6, 'Password minimal 6 karakter.'),
-    role: z.enum(ROLES, { message: 'Role wajib dipilih.' }),
+    // Only user/validator/admin can be picked here - super_admin can never
+    // be assigned through the app (see ASSIGNABLE_ROLES in types/role.js).
+    role: z.enum(ASSIGNABLE_ROLES, { message: 'Role wajib dipilih.' }),
   })
   .refine((data) => data.role === 'admin' || data.company_name.trim().length > 0, {
     message: 'Nama perusahaan wajib diisi untuk role User/Validator.',
@@ -159,7 +161,7 @@ export function AddAccountModal({ onClose }) {
               Role
             </label>
             <select id="role" className={inputClassName} {...form.register('role')}>
-              {ROLES.map((role) => (
+              {ASSIGNABLE_ROLES.map((role) => (
                 <option key={role} value={role}>
                   {ROLE_LABELS[role]}
                 </option>

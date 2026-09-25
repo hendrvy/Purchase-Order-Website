@@ -5,7 +5,12 @@
 -- COMPANIES TABLE
 -- ============================================================================
 
-CREATE TYPE roles AS ENUM ('user', 'validator', 'admin');
+-- 'super_admin' behaves like 'admin' for access purposes, but is locked:
+-- it can never be assigned through the app (create/role-change endpoints
+-- reject it outright) and, once set, can never be demoted or have its
+-- password reset by anyone via the app - only a direct DB UPDATE can grant
+-- or revoke it. See backend/api/models.go RoleSuperAdmin for details.
+CREATE TYPE roles AS ENUM ('user', 'validator', 'admin', 'super_admin');
 
 CREATE TABLE IF NOT EXISTS companies (
     id SERIAL PRIMARY KEY,

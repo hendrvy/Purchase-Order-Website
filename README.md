@@ -74,13 +74,34 @@ curl -X POST http://localhost:3455/api/register \
       "password": "password123",
       "company_name": "PT Test Company",
       "email": "test@example.com",
-      "phone": "+6281234567890",
-      "role": "user"
+      "phone": "+6281234567890"
     }
   }'
 ```
 
-Ganti `"role"` dengan `validator` atau `admin` untuk membuat akun dengan hak akses lebih tinggi (mis. melihat semua purchase order, mengubah status). Setelah register, login via `POST /api/login` dengan `username`+`password` yang sama untuk mendapatkan JWT token.
+`POST /api/register` selalu membuat akun dengan role `user`, apapun yang dikirim di field `role` akan diabaikan (lihat `Register` di `backend/api/auth_handlers.go`) — ini untuk mencegah siapapun mendaftarkan diri langsung sebagai admin. Setelah register, login via `POST /api/login` dengan `username`+`password` yang sama untuk mendapatkan JWT token.
+
+### Membuat Akun Admin Pertama
+
+Akun `validator`/`admin` hanya bisa dibuat oleh admin yang sudah ada, lewat `POST /api/companies` (lihat `AdminCreateCompany`). Karena butuh admin yang sudah ada, admin *pertama* harus dinaikkan manual lewat database setelah register biasa:
+
+```sql
+UPDATE companies SET role = 'admin' WHERE username = 'testuser';
+```
+
+### Role `super_admin`
+
+`super_admin` adalah role admin yang statusnya terkunci: hak aksesnya sama seperti `admin`, tapi role dan passwordnya **tidak bisa diubah oleh siapapun** lewat aplikasi (termasuk oleh dirinya sendiri untuk role, atau oleh admin lain untuk password). Role ini **tidak pernah bisa dibuat/diberikan lewat UI atau API** — satu-satunya cara adalah UPDATE manual ke database:
+
+```sql
+UPDATE companies SET role = 'super_admin' WHERE username = 'hendry';
+```
+
+Jika database sudah dibuat sebelum `super_admin` ditambahkan ke enum `roles`, jalankan dulu migrasi berikut sebelum query di atas:
+
+```bash
+psql "$DATABASE_URL" -f backend/db/migrations/001_add_super_admin_role.sql
+```
 
 Koleksi Postman lengkap tersedia di `Purchase Order Management API.postman_collection.json` (base URL sudah di-set ke `http://localhost:3455`).
 

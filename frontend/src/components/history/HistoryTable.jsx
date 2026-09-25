@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext.jsx'
 import { POStatusUpdateControl } from '@/components/history/POStatusUpdateControl.jsx'
 import { AttachmentThumbnailList } from '@/components/history/AttachmentThumbnailList.jsx'
 import { AttachmentPreviewModal } from '@/components/history/AttachmentPreviewModal.jsx'
+import { isAdminLikeRole } from '@/types/role.js'
 
 /**
  * @import { PurchaseOrder } from '@/types/po.js'
@@ -24,10 +25,10 @@ export function HistoryTable({ orders }) {
   /** @type {[Attachment | null, (a: Attachment | null) => void]} */
   const [previewAttachment, setPreviewAttachment] = useState(null)
 
-  // Only validator/admin see purchase orders across every company (a
-  // plain `user` only ever sees their own), so the "Perusahaan" column is
-  // only useful - and only populated by the backend - for those roles.
-  const showCompanyColumn = user?.role === 'validator' || user?.role === 'admin'
+  // Only validator/admin(-like) see purchase orders across every company
+  // (a plain `user` only ever sees their own), so the "Perusahaan" column
+  // is only useful - and only populated by the backend - for those roles.
+  const showCompanyColumn = user?.role === 'validator' || isAdminLikeRole(user?.role)
 
   const sortedOrders = [...orders].sort(
     (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),

@@ -91,6 +91,18 @@ func AdminCreateCompany(c *gin.Context) {
 		return
 	}
 
+	// super_admin can never be assigned through the API, even by an
+	// existing admin - the only way to grant it is a manual UPDATE
+	// directly against the database. See RoleSuperAdmin in models.go.
+	if company.Role == RoleSuperAdmin {
+		c.JSON(http.StatusForbidden, JsonResponse{
+			Status:  http.StatusForbidden,
+			Message: "Cannot create a super_admin account",
+			Error:   "Role super_admin can only be granted via direct database access",
+		})
+		return
+	}
+
 	// Company name is only mandatory for "user" accounts (a user account
 	// represents an actual client company placing purchase orders).
 	// Validator/admin accounts are internal staff, so fall back to the
@@ -199,6 +211,17 @@ func AdminUpdateCompanyRole(c *gin.Context) {
 		return
 	}
 
+	// super_admin can never be assigned through the API - see
+	// RoleSuperAdmin in models.go.
+	if Roles(req.Role) == RoleSuperAdmin {
+		c.JSON(http.StatusForbidden, JsonResponse{
+			Status:  http.StatusForbidden,
+			Message: "Cannot assign super_admin role",
+			Error:   "Role super_admin can only be granted via direct database access",
+		})
+		return
+	}
+
 	adminID := c.GetUint("user_id")
 	if companyID == adminID {
 		c.JSON(http.StatusBadRequest, JsonResponse{
@@ -215,6 +238,19 @@ func AdminUpdateCompanyRole(c *gin.Context) {
 			Status:  http.StatusNotFound,
 			Error:   "Company not found",
 			Message: "No company with that ID",
+		})
+		return
+	}
+
+	// A super_admin's role can never be changed by anyone, including
+	// another super_admin - it's permanently locked once granted (only
+	// undoable via direct database access). See RoleSuperAdmin in
+	// models.go.
+	if company.Role == RoleSuperAdmin {
+		c.JSON(http.StatusForbidden, JsonResponse{
+			Status:  http.StatusForbidden,
+			Message: "Cannot change role of a super_admin account",
+			Error:   "This account's role is permanently locked",
 		})
 		return
 	}
@@ -287,11 +323,25 @@ func AdminResetCompanyPassword(c *gin.Context) {
 		return
 	}
 
-	if !ValidateCompanyExists(companyID) {
+	targetCompany, err := GetCompanyByIDDB(companyID)
+	if err != nil {
 		c.JSON(http.StatusNotFound, JsonResponse{
 			Status:  http.StatusNotFound,
 			Error:   "Company not found",
 			Message: "No company with that ID",
+		})
+		return
+	}
+
+	// A super_admin's password can never be reset by anyone else - only
+	// the super_admin themselves can change it, via the normal
+	// ChangePassword flow (which requires their current password). See
+	// RoleSuperAdmin in models.go.
+	if targetCompany.Role == RoleSuperAdmin {
+		c.JSON(http.StatusForbidden, JsonResponse{
+			Status:  http.StatusForbidden,
+			Message: "Cannot reset password of a super_admin account",
+			Error:   "This account's password can only be changed by the account owner",
 		})
 		return
 	}

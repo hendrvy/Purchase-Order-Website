@@ -12,6 +12,16 @@ const (
 	RoleUser      Roles = "user"
 	RoleValidator Roles = "validator"
 	RoleAdmin     Roles = "admin"
+	// RoleSuperAdmin - a locked-down admin account (e.g. the founder).
+	// Behaves like RoleAdmin for access purposes (see RequireAdmin), but:
+	//   - can never be demoted or have its password reset by anyone,
+	//     including itself, via the API (see AdminUpdateCompanyRole /
+	//     AdminResetCompanyPassword in admin_handlers.go).
+	//   - can never be assigned to an account through the API (create or
+	//     role-change) - the only way to grant it is a manual UPDATE
+	//     directly against the database. This is intentional: it prevents
+	//     privilege escalation to super_admin from within the app itself.
+	RoleSuperAdmin Roles = "super_admin"
 )
 
 type Company struct {
@@ -21,7 +31,11 @@ type Company struct {
 	// AdminCreateCompany defaults it to RoleUser when left blank. Keeping
 	// "required" here would reject BindJSON on any request that omits the
 	// field before either handler's own logic ever runs.
-	Role        Roles          `json:"role" gorm:"type:varchar(50);not null;default:'user'" binding:"omitempty,oneof=user validator admin"`
+	// binding oneof includes super_admin only so BindJSON doesn't reject a
+	// payload that happens to carry it (e.g. GET /companies responses fed
+	// back through a form) - AdminCreateCompany/AdminUpdateCompanyRole
+	// still explicitly reject attempts to *assign* super_admin via the API.
+	Role        Roles          `json:"role" gorm:"type:varchar(50);not null;default:'user'" binding:"omitempty,oneof=user validator admin super_admin"`
 	Username    string         `json:"username" binding:"required" gorm:"unique;not null"`
 	// CompanyName has no binding:"required" tag - it IS required for
 	// public self-registration (see Register in auth_handlers.go, which

@@ -63,14 +63,14 @@ export function getStatusConfig(status) {
  */
 const TRANSITION_RULES = {
   verifying: {
-    process: ['validator', 'admin'],
-    rejected: ['validator', 'admin'],
+    process: ['validator', 'admin', 'super_admin'],
+    rejected: ['validator', 'admin', 'super_admin'],
   },
   process: {
-    shipping: ['validator', 'admin'],
+    shipping: ['validator', 'admin', 'super_admin'],
   },
   shipping: {
-    complete: ['validator', 'admin'],
+    complete: ['validator', 'admin', 'super_admin'],
   },
   complete: {},
   rejected: {},

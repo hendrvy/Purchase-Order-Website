@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card.jsx'
 import { Button } from '@/components/ui/button.jsx'
 import { useAuth } from '@/context/AuthContext.jsx'
 import { formatDate } from '@/lib/format.js'
-import { ROLES, ROLE_LABELS } from '@/types/role.js'
+import { ASSIGNABLE_ROLES, ROLES, ROLE_LABELS } from '@/types/role.js'
 import { useCompaniesQuery } from '@/hooks/useCompaniesQuery.js'
 import { useUpdateCompanyRoleMutation } from '@/hooks/useUpdateCompanyRoleMutation.js'
 import { AddAccountModal } from '@/components/admin/AddAccountModal.jsx'
@@ -138,6 +138,10 @@ export function UserManagementPage() {
                   <tbody className="divide-y divide-gray-100">
                     {companies.map((company) => {
                       const isSelf = company.id === currentUser?.id
+                      // super_admin's role/password are permanently locked
+                      // - can't be changed by anyone via the app, not even
+                      // by another super_admin. See backend RoleSuperAdmin.
+                      const isSuperAdmin = company.role === 'super_admin'
 
                       return (
                         <tr key={company.id} className="align-top hover:bg-gray-50">
@@ -158,32 +162,50 @@ export function UserManagementPage() {
                             {company.phone || <span className="text-gray-400">-</span>}
                           </td>
                           <td className="px-5 py-3 whitespace-nowrap">
-                            <select
-                              value={company.role}
-                              disabled={isSelf || updateRoleMutation.isPending}
-                              onChange={(event) => handleRoleChange(company, event.target.value)}
-                              title={isSelf ? 'Tidak bisa mengubah role sendiri' : undefined}
-                              className={selectClassName}
-                            >
-                              {ROLES.map((role) => (
-                                <option key={role} value={role}>
-                                  {ROLE_LABELS[role]}
-                                </option>
-                              ))}
-                            </select>
+                            {isSuperAdmin ? (
+                              <span
+                                className="inline-flex items-center rounded-[20px] border border-[#B00100] bg-red-50 px-3 py-1 text-xs font-medium text-[#B00100]"
+                                title="Role Super Admin terkunci permanen, tidak bisa diubah siapapun"
+                              >
+                                {ROLE_LABELS.super_admin}
+                              </span>
+                            ) : (
+                              <select
+                                value={company.role}
+                                disabled={isSelf || updateRoleMutation.isPending}
+                                onChange={(event) => handleRoleChange(company, event.target.value)}
+                                title={isSelf ? 'Tidak bisa mengubah role sendiri' : undefined}
+                                className={selectClassName}
+                              >
+                                {ASSIGNABLE_ROLES.map((role) => (
+                                  <option key={role} value={role}>
+                                    {ROLE_LABELS[role]}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
                           </td>
                           <td className="px-5 py-3 whitespace-nowrap text-gray-500">
                             {company.created_at ? formatDate(company.created_at) : '-'}
                           </td>
                           <td className="px-5 py-3 whitespace-nowrap">
-                            <button
-                              type="button"
-                              onClick={() => setResetPasswordTarget(company)}
-                              className="flex items-center gap-1 text-xs text-gray-600 hover:text-[#B00100] hover:underline"
-                            >
-                              <KeyRound size={13} />
-                              Reset Password
-                            </button>
+                            {isSuperAdmin ? (
+                              <span
+                                className="text-xs text-gray-400"
+                                title="Password Super Admin hanya bisa diubah oleh akun itu sendiri lewat halaman Profile"
+                              >
+                                -
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => setResetPasswordTarget(company)}
+                                className="flex items-center gap-1 text-xs text-gray-600 hover:text-[#B00100] hover:underline"
+                              >
+                                <KeyRound size={13} />
+                                Reset Password
+                              </button>
+                            )}
                           </td>
                         </tr>
                       )

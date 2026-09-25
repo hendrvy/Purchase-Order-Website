@@ -222,9 +222,13 @@ func ValidateStatusTransition(currentStatus string, newStatus string) error {
 // ============================================================================
 
 // IsValidRole - Check that a role string is one of the known roles.
+// Note: this only checks the role is *recognized* (e.g. valid as a
+// ?role= filter) - it does NOT mean the role can be freely assigned.
+// super_admin in particular can never be assigned through the API; see
+// AdminCreateCompany/AdminUpdateCompanyRole in admin_handlers.go.
 func IsValidRole(role string) bool {
 	switch Roles(role) {
-	case RoleUser, RoleValidator, RoleAdmin:
+	case RoleUser, RoleValidator, RoleAdmin, RoleSuperAdmin:
 		return true
 	default:
 		return false

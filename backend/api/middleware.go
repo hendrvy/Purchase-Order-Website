@@ -76,11 +76,14 @@ func AuthMiddleware() gin.HandlerFunc {
 	}
 }
 
-// RequireAdmin - Middleware yang membatasi akses hanya untuk role "admin".
+// RequireAdmin - Middleware yang membatasi akses hanya untuk role "admin"
+// atau "super_admin" (super_admin punya hak akses admin penuh, ditambah
+// proteksi khusus yang ditegakkan di masing-masing handler, bukan di sini).
 // Harus dipasang setelah AuthMiddleware (butuh context "role" sudah di-set).
 func RequireAdmin() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if c.GetString("role") != string(RoleAdmin) {
+		role := c.GetString("role")
+		if role != string(RoleAdmin) && role != string(RoleSuperAdmin) {
 			c.JSON(http.StatusForbidden, JsonResponse{
 				Status:  http.StatusForbidden,
 				Error:   "Access denied",

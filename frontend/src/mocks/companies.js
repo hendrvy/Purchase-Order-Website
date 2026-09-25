@@ -66,4 +66,17 @@ export const MOCK_COMPANIES = [
     created_at: '2025-05-20T00:00:00.000Z',
     updated_at: '2025-05-20T00:00:00.000Z',
   },
+  {
+    id: 6,
+    username: 'hendry',
+    company_name: 'Hendry',
+    email: 'hendry@mail.com',
+    phone: '+6286666666666',
+    // super_admin is never assignable through the app UI - it can only be
+    // set this way in the mock data, or via a direct DB UPDATE in a real
+    // backend. See types/role.js ASSIGNABLE_ROLES for why.
+    role: 'super_admin',
+    created_at: '2025-01-01T00:00:00.000Z',
+    updated_at: '2025-01-01T00:00:00.000Z',
+  },
 ]

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { ChevronUp, ChevronDown, LogOut, User } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext.jsx'
-import { ROLE_LABELS } from '@/types/role.js'
+import { ROLE_LABELS, isAdminLikeRole } from '@/types/role.js'
 import { ProfileAvatar } from '@/components/profile/ProfileAvatar.jsx'
 import logo from '@/assets/logo.png'
 
@@ -29,7 +29,7 @@ export function AppLayout() {
     DASHBOARD_NAV_ITEM,
     ...(user?.role === 'user' ? [PURCHASE_ORDER_NAV_ITEM] : []),
     HISTORY_NAV_ITEM,
-    ...(user?.role === 'admin' ? ADMIN_NAV_ITEMS : []),
+    ...(isAdminLikeRole(user?.role) ? ADMIN_NAV_ITEMS : []),
   ]
 
   // Close the profile dropdown when clicking anywhere outside of it.

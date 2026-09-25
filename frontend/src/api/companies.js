@@ -95,6 +95,13 @@ export async function createCompany(input) {
   if (shouldUseMocks()) {
     await delay(500)
 
+    // super_admin can never be assigned through the app - mirrors the
+    // backend rejection in AdminCreateCompany. See types/role.js
+    // ASSIGNABLE_ROLES.
+    if (input.role === 'super_admin') {
+      throw new ApiError('Role super_admin tidak bisa dibuat melalui aplikasi.', { status: 403 })
+    }
+
     if (MOCK_COMPANIES.some((company) => company.username === input.username)) {
       throw new ApiError('Username sudah digunakan.', {
         status: 409,
@@ -148,7 +155,21 @@ export async function createCompany(input) {
 export async function updateCompanyRole(companyId, role) {
   if (shouldUseMocks()) {
     await delay(300)
+
+    // super_admin can never be assigned, and an existing super_admin's
+    // role can never be changed by anyone - mirrors the backend
+    // rejections in AdminUpdateCompanyRole. See types/role.js
+    // ASSIGNABLE_ROLES.
+    if (role === 'super_admin') {
+      throw new ApiError('Role super_admin tidak bisa diberikan melalui aplikasi.', {
+        status: 403,
+      })
+    }
+
     const company = MOCK_COMPANIES.find((item) => item.id === companyId)
+    if (company?.role === 'super_admin') {
+      throw new ApiError('Role akun Super Admin tidak dapat diubah.', { status: 403 })
+    }
     if (company) {
       company.role = role
       company.updated_at = new Date().toISOString()
@@ -171,6 +192,15 @@ export async function updateCompanyRole(companyId, role) {
 export async function resetCompanyPassword(companyId, newPassword) {
   if (shouldUseMocks()) {
     await delay(300)
+
+    // Mirrors the backend rejection in AdminResetCompanyPassword - a
+    // super_admin's password can only be changed by the account owner.
+    const company = MOCK_COMPANIES.find((item) => item.id === companyId)
+    if (company?.role === 'super_admin') {
+      throw new ApiError('Password akun Super Admin tidak dapat direset oleh admin lain.', {
+        status: 403,
+      })
+    }
     return
   }
 

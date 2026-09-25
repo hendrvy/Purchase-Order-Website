@@ -8,6 +8,7 @@ import { PurchaseOrderPage } from '@/pages/PurchaseOrderPage.jsx'
 import { ActivityLogPage } from '@/pages/admin/ActivityLogPage.jsx'
 import { UserManagementPage } from '@/pages/admin/UserManagementPage.jsx'
 import { ProtectedRoute } from '@/routes/ProtectedRoute.jsx'
+import { ADMIN_LIKE_ROLES } from '@/types/role.js'
 
 export const router = createBrowserRouter([
   {
@@ -33,7 +34,7 @@ export const router = createBrowserRouter([
             children: [{ path: 'purchase-order', element: <PurchaseOrderPage /> }],
           },
           {
-            element: <ProtectedRoute allowedRoles={['admin']} />,
+            element: <ProtectedRoute allowedRoles={ADMIN_LIKE_ROLES} />,
             children: [
               { path: 'admin/users', element: <UserManagementPage /> },
               { path: 'admin/activity-log', element: <ActivityLogPage /> },

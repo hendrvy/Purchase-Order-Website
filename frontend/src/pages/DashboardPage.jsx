@@ -5,10 +5,11 @@ import { SummaryCards } from '@/components/dashboard/SummaryCards.jsx'
 import { UserRoleSummaryCards } from '@/components/dashboard/UserRoleSummaryCards.jsx'
 import { StatusDistributionChart } from '@/components/dashboard/StatusDistributionChart.jsx'
 import { RecentOrdersCard } from '@/components/dashboard/RecentOrdersCard.jsx'
+import { isAdminLikeRole } from '@/types/role.js'
 
 export function DashboardPage() {
   const { user } = useAuth()
-  const isAdmin = user?.role === 'admin'
+  const isAdmin = isAdminLikeRole(user?.role)
   const { data: orders = [], isLoading, isError, error } = usePurchaseOrdersQuery()
   const { data: companies = [] } = useCompaniesQuery(undefined, { enabled: isAdmin })
 
