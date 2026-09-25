@@ -1,9 +1,11 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AppLayout } from '@/components/layout/AppLayout.jsx'
 import { DashboardPage } from '@/pages/DashboardPage.jsx'
+import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage.jsx'
 import { HistoryOrderPage } from '@/pages/HistoryOrderPage.jsx'
 import { LoginPage } from '@/pages/LoginPage.jsx'
 import { ProfilePage } from '@/pages/ProfilePage.jsx'
+import { ResetPasswordPage } from '@/pages/ResetPasswordPage.jsx'
 import { PurchaseOrderPage } from '@/pages/PurchaseOrderPage.jsx'
 import { ActivityLogPage } from '@/pages/admin/ActivityLogPage.jsx'
 import { UserManagementPage } from '@/pages/admin/UserManagementPage.jsx'
@@ -14,6 +16,14 @@ export const router = createBrowserRouter([
   {
     path: '/login',
     element: <LoginPage />,
+  },
+  {
+    path: '/forgot-password',
+    element: <ForgotPasswordPage />,
+  },
+  {
+    path: '/reset-password',
+    element: <ResetPasswordPage />,
   },
   {
     path: '/',

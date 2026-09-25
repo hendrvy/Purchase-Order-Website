@@ -216,6 +216,30 @@ CREATE INDEX IF NOT EXISTS idx_profile_changes_user_id ON profile_changes(user_i
 CREATE INDEX IF NOT EXISTS idx_profile_changes_changed_at ON profile_changes(changed_at);
 
 -- ============================================================================
+-- PASSWORD RESETS TABLE (self-service "forgot password" via email)
+-- ============================================================================
+-- Only a SHA-256 hash of the raw reset token is stored (token_hash) - the
+-- raw token only ever exists in the emailed link. See
+-- backend/api/forgot_password_handlers.go for the issue/consume flow.
+CREATE TABLE IF NOT EXISTS password_resets (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    token_hash VARCHAR(64) UNIQUE NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    used_at TIMESTAMP,  -- NULL = still unused/valid
+    ip_address VARCHAR(45),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_password_resets_user
+        FOREIGN KEY (user_id)
+        REFERENCES companies(id)
+        ON DELETE RESTRICT
+);
+
+CREATE INDEX IF NOT EXISTS idx_password_resets_token_hash ON password_resets(token_hash);
+CREATE INDEX IF NOT EXISTS idx_password_resets_user_id ON password_resets(user_id);
+
+-- ============================================================================
 -- SAMPLE QUERIES FOR REFERENCE
 -- ============================================================================
 

@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"time"
 )
 
 // stripPurchaseOrdersCompanyPassword - Clear the hashed password off each
@@ -445,4 +446,66 @@ func GetAllDownloadLogsDB(limit int) ([]DownloadLog, error) {
 		return nil, result.Error
 	}
 	return logs, nil
+}
+
+// ============================================================================
+// PASSWORD RESET DATABASE HELPERS (self-service "forgot password" flow)
+// ============================================================================
+
+// GetCompanyByEmailDB - Get company by email from database. Used by
+// ForgotPassword to look up the account to send a reset link to.
+func GetCompanyByEmailDB(email string) (*Company, error) {
+	var companyfromdb Company
+	result := DB.Where("email = ?", email).First(&companyfromdb)
+	if result.Error != nil {
+		return &Company{}, result.Error
+	}
+	return &companyfromdb, nil
+}
+
+// InvalidateExistingPasswordResetsDB - Marks every still-valid (unused,
+// unexpired) reset token previously issued for a user as used, so
+// requesting a new reset link immediately invalidates any older ones
+// still sitting in a previous email.
+func InvalidateExistingPasswordResetsDB(userID uint) error {
+	result := DB.Model(&PasswordReset{}).
+		Where("user_id = ? AND used_at IS NULL", userID).
+		Update("used_at", time.Now())
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+// CreatePasswordResetDB - Store a new password reset token record.
+func CreatePasswordResetDB(reset *PasswordReset) error {
+	result := DB.Create(reset)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+// GetValidPasswordResetByTokenHashDB - Look up a password reset record by
+// its token hash, only returning it if it hasn't been used yet and hasn't
+// expired. Returns an error (record not found) otherwise, so callers
+// don't need to separately check UsedAt/ExpiresAt.
+func GetValidPasswordResetByTokenHashDB(tokenHash string) (*PasswordReset, error) {
+	var reset PasswordReset
+	result := DB.Where("token_hash = ? AND used_at IS NULL AND expires_at > ?", tokenHash, time.Now()).
+		First(&reset)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return &reset, nil
+}
+
+// MarkPasswordResetUsedDB - Marks a password reset token as used, so it
+// can never be replayed to reset the password a second time.
+func MarkPasswordResetUsedDB(id uint) error {
+	result := DB.Model(&PasswordReset{}).Where("id = ?", id).Update("used_at", time.Now())
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
 }

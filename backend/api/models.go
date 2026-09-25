@@ -176,3 +176,29 @@ type UpdateCompanyProfileResponse struct {
 	Token   string  `json:"token"`
 	Company Company `json:"company"`
 }
+
+// PasswordReset - a one-time-use, expiring token issued when a locked-out
+// user requests a password reset via email (see ForgotPassword/
+// ResetPassword in forgot_password_handlers.go). Only a SHA-256 hash of
+// the raw token is stored (TokenHash) - never the raw token itself - so a
+// leaked database dump can't be used to reset anyone's password; the raw
+// token only ever exists in the email link and briefly in memory while
+// handling the request.
+type PasswordReset struct {
+	ID        uint       `json:"id" gorm:"primaryKey"`
+	UserID    uint       `json:"user_id" gorm:"not null"`
+	TokenHash string     `json:"-" gorm:"column:token_hash;not null;uniqueIndex"`
+	ExpiresAt time.Time  `json:"expires_at" gorm:"not null"`
+	UsedAt    *time.Time `json:"used_at,omitempty"`
+	IPAddress string     `json:"ip_address"`
+	CreatedAt time.Time  `json:"created_at"`
+}
+
+type ForgotPasswordRequest struct {
+	Email string `json:"email" binding:"required"`
+}
+
+type ResetPasswordRequest struct {
+	Token       string `json:"token" binding:"required"`
+	NewPassword string `json:"new_password" binding:"required"`
+}

@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import { useAuth } from '@/context/AuthContext.jsx'
 import { useLoginMutation } from '@/hooks/useLoginMutation.js'
@@ -121,12 +121,12 @@ export function LoginPage() {
 
           {/* Forgot Password */}
           <div className="mt-2 flex justify-end">
-            <a
-              href="#"
+            <Link
+              to="/forgot-password"
               className="text-xs text-gray-500 transition-colors hover:text-[#D97745]"
             >
               Forgot Password?
-            </a>
+            </Link>
           </div>
 
           {errors.password && (
