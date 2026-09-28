@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import { useAuth } from '@/context/AuthContext.jsx'
 import { useLoginMutation } from '@/hooks/useLoginMutation.js'
@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button.jsx'
 
 const loginSchema = z.object({
   username: z.string().min(1, 'Username wajib diisi.'),
-  password: z.string().min(6, 'Password minimal 6 karakter.'),
+  password: z.string().min(1, 'Password wajib diisi.'),
 })
 
 // Login always drops the user on /dashboard - it intentionally does NOT
@@ -118,16 +118,6 @@ export function LoginPage() {
             className="mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-[#D97745] focus:outline-none focus:ring-1 focus:ring-[#D97745]"
             {...register('password')}
           />
-
-          {/* Forgot Password */}
-          <div className="mt-2 flex justify-end">
-            <Link
-              to="/forgot-password"
-              className="text-xs text-gray-500 transition-colors hover:text-[#D97745]"
-            >
-              Forgot Password?
-            </Link>
-          </div>
 
           {errors.password && (
             <p className="mt-1 text-xs text-red-600">

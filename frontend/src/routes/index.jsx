@@ -1,11 +1,9 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AppLayout } from '@/components/layout/AppLayout.jsx'
 import { DashboardPage } from '@/pages/DashboardPage.jsx'
-import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage.jsx'
 import { HistoryOrderPage } from '@/pages/HistoryOrderPage.jsx'
 import { LoginPage } from '@/pages/LoginPage.jsx'
 import { ProfilePage } from '@/pages/ProfilePage.jsx'
-import { ResetPasswordPage } from '@/pages/ResetPasswordPage.jsx'
 import { PurchaseOrderPage } from '@/pages/PurchaseOrderPage.jsx'
 import { ActivityLogPage } from '@/pages/admin/ActivityLogPage.jsx'
 import { UserManagementPage } from '@/pages/admin/UserManagementPage.jsx'
@@ -18,12 +16,12 @@ export const router = createBrowserRouter([
     element: <LoginPage />,
   },
   {
-    path: '/forgot-password',
-    element: <ForgotPasswordPage />,
-  },
-  {
+    // Self-service "forgot password" was removed - password resets are
+    // admin-only now (see components/admin/ResetPasswordModal.jsx). This
+    // redirect just catches any stale emailed reset links still floating
+    // around and sends them back to /login instead of a dead page.
     path: '/reset-password',
-    element: <ResetPasswordPage />,
+    element: <Navigate to="/login" replace />,
   },
   {
     path: '/',

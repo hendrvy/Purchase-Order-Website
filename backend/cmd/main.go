@@ -25,8 +25,6 @@ func main() {
 	router.POST("/api/login", api.Login)
 	router.POST("/api/register", api.Register)
 	router.POST("/api/validate", api.AuthenticateToken)
-	router.POST("/api/forgot-password", api.ForgotPassword)
-	router.POST("/api/reset-password", api.ResetPassword)
 
 	// ========================================================================
 	// Protected Routes (Authentication Required)

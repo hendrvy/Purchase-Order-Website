@@ -1,0 +1,11 @@
+-- Migration: drop the `password_resets` table.
+--
+-- The self-service "forgot password" flow (emailed reset link) has been
+-- removed - password resets are now admin-only (see
+-- components/admin/ResetPasswordModal.jsx and AdminResetCompanyPassword
+-- in backend/api/admin_handlers.go). This table (added by
+-- 002_add_password_resets_table.sql) is no longer used by any code path.
+--
+-- Usage:
+--   psql "$DATABASE_URL" -f backend/db/migrations/003_drop_password_resets_table.sql
+DROP TABLE IF EXISTS password_resets;
