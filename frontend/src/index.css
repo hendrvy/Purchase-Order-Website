@@ -161,4 +161,15 @@
   html {
     @apply font-sans;
   }
+  /* Guards against any element (e.g. a mis-positioned portaled dropdown -
+     see useAnchoredPosition.js) accidentally widening the document past
+     the viewport. Without this, an accidental horizontal overflow lets
+     the whole page shift/scroll sideways on mobile browsers, dragging
+     fixed-position elements like AppLayout's mobile top bar along with
+     it - which looked like "the logo shifts" when a dropdown opened near
+     the right edge of a narrow screen. */
+  html, body {
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
 }

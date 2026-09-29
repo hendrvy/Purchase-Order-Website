@@ -49,8 +49,15 @@ export function POStatusUpdateControl({ order, role }) {
   // `overflow-hidden`/`overflow-x-auto` (the table wrapper, the Card, and
   // the status <td> itself all clip overflow - see HistoryTable.jsx).
   // useAnchoredPosition computes its on-screen position from the trigger
-  // button's rect, since it's no longer a DOM descendant of it.
-  const menuPosition = useAnchoredPosition(isOpen, triggerRef)
+  // button's rect, since it's no longer a DOM descendant of it. Passing
+  // the panel's width (`w-56` below = 224px) lets it clamp `left` to stay
+  // fully inside the viewport - without this, a trigger near the right
+  // edge (common on mobile, where the status control sits at the right
+  // edge of a narrow card - see HistoryTable's mobile card view) would
+  // render the panel partly off-screen, widening the page's scrollable
+  // area and causing the whole layout to visibly shift on some mobile
+  // browsers.
+  const menuPosition = useAnchoredPosition(isOpen, triggerRef, 224)
 
   if (allowedTargets.length === 0) {
     return <POStatusBadge status={order.status} />
@@ -98,14 +105,19 @@ export function POStatusUpdateControl({ order, role }) {
 
   return (
     <div className="relative inline-block">
+      {/* Always-visible border + background (not just on `:hover`, which
+          doesn't exist on touch devices and left this control looking
+          like a plain read-only badge on mobile with no indication it's
+          tappable) gives this a clear "button" affordance at rest.
+          `active:` provides the actual tap feedback on touch devices. */}
       <button
         ref={triggerRef}
         type="button"
         onClick={() => setIsOpen((open) => !open)}
-        className="flex items-center gap-1 rounded-full border border-transparent px-0.5 py-0.5 transition hover:border-gray-200"
+        className="flex items-center gap-1 rounded-full border border-gray-300 bg-white py-0.5 pr-1.5 pl-0.5 shadow-sm transition hover:border-gray-400 hover:bg-gray-50 active:bg-gray-100"
       >
         <POStatusBadge status={order.status} />
-        <ChevronDown size={14} className="text-gray-400" />
+        <ChevronDown size={14} className="text-gray-500" />
       </button>
 
       {isOpen &&
@@ -126,7 +138,7 @@ export function POStatusUpdateControl({ order, role }) {
                     key={target}
                     type="button"
                     onClick={() => handlePickTarget(target)}
-                    className="rounded-md px-2 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-100"
+                    className="rounded-md px-2 py-1.5 text-left text-sm text-gray-700 transition hover:bg-gray-100 active:bg-gray-200"
                   >
                     {getStatusConfig(target).label}
                   </button>
@@ -158,7 +170,7 @@ export function POStatusUpdateControl({ order, role }) {
                     type="button"
                     onClick={handleCancel}
                     disabled={updateStatusMutation.isPending}
-                    className="rounded-md px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+                    className="rounded-md px-3 py-1 text-xs text-gray-600 transition hover:bg-gray-100 active:bg-gray-200 disabled:opacity-50"
                   >
                     Batal
                   </button>
@@ -166,7 +178,7 @@ export function POStatusUpdateControl({ order, role }) {
                     type="button"
                     onClick={handleConfirm}
                     disabled={updateStatusMutation.isPending}
-                    className="flex items-center gap-1 rounded-md bg-[#B00100] px-3 py-1 text-xs font-medium text-white hover:bg-[#B33332] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex items-center gap-1 rounded-md bg-[#B00100] px-3 py-1 text-xs font-medium text-white transition hover:bg-[#B33332] active:bg-[#8f0100] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {updateStatusMutation.isPending && (
                       <Loader2 size={12} className="animate-spin" />

@@ -35,7 +35,10 @@ export function AttachmentThumbnailList({ attachments = [], onPreview }) {
   const morePanelRef = useRef(null)
 
   useClickOutside(isMoreOpen, [moreTriggerRef, morePanelRef], () => setIsMoreOpen(false))
-  const panelPosition = useAnchoredPosition(isMoreOpen, moreTriggerRef)
+  // Panel width (`w-64` below = 256px) passed so the panel clamps to the
+  // viewport instead of overflowing off-screen - see the comment on
+  // useAnchoredPosition's `panelWidth` param for why this matters on mobile.
+  const panelPosition = useAnchoredPosition(isMoreOpen, moreTriggerRef, 256)
 
   if (!attachments || attachments.length === 0) {
     return <span className="text-xs text-gray-400">Tidak ada file</span>

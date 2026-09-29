@@ -45,7 +45,7 @@ export function RecentOrdersCard({ orders, limit = 5 }) {
                 </div>
 
                 <div className="flex flex-shrink-0 flex-col items-end gap-1">
-                  <span className="text-sm font-medium text-gray-900">
+                  <span className="text-xs font-medium text-gray-700">
                     {formatCurrency(order.total_amount)}
                   </span>
                   <POStatusBadge status={order.status} />
