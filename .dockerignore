@@ -13,6 +13,7 @@
 
 # Node
 node_modules
+frontend/node_modules
 npm-debug.log
 yarn-error.log
 .npm
@@ -20,6 +21,7 @@ yarn-error.log
 # OS
 Thumbs.db
 desktop.ini
+*.exe
 
 # Documentation
 README.md
@@ -31,11 +33,11 @@ README.md
 
 # Build outputs (will be rebuilt)
 frontend/build
+frontend/dist
 backend/.build
 
 # Docker
 docker-compose.override.yml
-Dockerfile*
 .docker
 
 # CI/CD
@@ -48,3 +50,7 @@ Dockerfile*
 .cache
 .temp
 psql.bat
+
+# Database and cache files
+*.db
+*.sqlite

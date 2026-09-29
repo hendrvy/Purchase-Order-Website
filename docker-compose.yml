@@ -30,8 +30,6 @@ services:
     container_name: nginx-web
     ports:
       - "80:80"
-    volumes:
-      - ./frontend/dist:/usr/share/nginx/html:ro
     depends_on:
       - api
 
