@@ -1,0 +1,21 @@
+-- Migration: add 'super_admin' value to the `roles` enum.
+--
+-- Run this once against any existing database that was created from an
+-- older copy of backend/db/schema.sql (before 'super_admin' was added to
+-- the CREATE TYPE statement there). New databases created from the
+-- current schema.sql already include this value and do NOT need this
+-- migration.
+--
+-- Usage:
+--   psql "$DATABASE_URL" -f backend/db/migrations/001_add_super_admin_role.sql
+--
+-- Note: ALTER TYPE ... ADD VALUE cannot run inside the same transaction
+-- block as a query that uses the new value, but it's fine on its own.
+ALTER TYPE roles ADD VALUE IF NOT EXISTS 'super_admin';
+
+-- After running the migration above, promote the founder account to
+-- super_admin manually (this is intentionally NOT automated - see
+-- backend/api/models.go RoleSuperAdmin for why). Replace the username
+-- below with the actual account:
+--
+--   UPDATE companies SET role = 'super_admin' WHERE username = 'hendry';

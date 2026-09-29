@@ -1,20 +1,24 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
-import { Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import { useAuth } from '@/context/AuthContext.jsx'
 import { useLoginMutation } from '@/hooks/useLoginMutation.js'
 import { Button } from '@/components/ui/button.jsx'
 
 const loginSchema = z.object({
-  email: z.string().min(1, 'Email wajib diisi.').email('Format email tidak valid.'),
+  username: z.string().min(1, 'Username wajib diisi.'),
   password: z.string().min(6, 'Password minimal 6 karakter.'),
 })
+
+// Login always drops the user on /dashboard - it intentionally does NOT
+// send them back to whatever protected page they originally tried to
+// visit (no `location.state.from` handling here), per product decision.
+const DASHBOARD_PATH = '/dashboard'
 
 export function LoginPage() {
   const { user, token } = useAuth()
   const navigate = useNavigate()
-  const location = useLocation()
   const mutation = useLoginMutation()
 
   const {
@@ -23,20 +27,18 @@ export function LoginPage() {
     formState: { errors },
   } = useForm({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '' },
+    defaultValues: { username: '', password: '' },
   })
 
   // Already logged in - don't show the login form again.
   if (token && user) {
-    const redirectTo = location.state?.from?.pathname ?? '/dashboard'
-    return <Navigate to={redirectTo} replace />
+    return <Navigate to={DASHBOARD_PATH} replace />
   }
 
   const onSubmit = (values) => {
     mutation.mutate(values, {
       onSuccess: () => {
-        const redirectTo = location.state?.from?.pathname ?? '/dashboard'
-        navigate(redirectTo, { replace: true })
+        navigate(DASHBOARD_PATH, { replace: true })
       },
     })
   }
@@ -75,26 +77,26 @@ export function LoginPage() {
         noValidate
       >
 
-        {/* Email */}
+        {/* Username */}
         <div>
           <label
-            htmlFor="email"
+            htmlFor="username"
             className="block text-sm font-medium text-gray-700"
           >
-            Email
+            Username
           </label>
 
           <input
-            id="email"
-            type="email"
-            autoComplete="email"
+            id="username"
+            type="text"
+            autoComplete="username"
             className="mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-[#D97745] focus:outline-none focus:ring-1 focus:ring-[#D97745]"
-            {...register('email')}
+            {...register('username')}
           />
 
-          {errors.email && (
+          {errors.username && (
             <p className="mt-1 text-xs text-red-600">
-              {errors.email.message}
+              {errors.username.message}
             </p>
           )}
         </div>
@@ -119,12 +121,12 @@ export function LoginPage() {
 
           {/* Forgot Password */}
           <div className="mt-2 flex justify-end">
-            <a
-              href="#"
+            <Link
+              to="/forgot-password"
               className="text-xs text-gray-500 transition-colors hover:text-[#D97745]"
             >
               Forgot Password?
-            </a>
+            </Link>
           </div>
 
           {errors.password && (

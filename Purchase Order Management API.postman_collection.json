@@ -1,0 +1,950 @@
+{
+  "info": {
+    "_postman_id": "93748d27-6541-4190-bc56-cedea7ab7cb9",
+    "name": "Purchase Order Management API",
+    "description": "Complete API collection for PT SMS Purchase Order Management System - Testing endpoints for company registration, authentication, purchase order CRUD operations, and file management.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "39285157"
+  },
+  "item": [
+    {
+      "name": "Public Endpoints",
+      "item": [
+        {
+          "name": "Hello Test",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has correct structure\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('status');",
+                  "    pm.expect(jsonData).to.have.property('message');",
+                  "    pm.expect(jsonData).to.have.property('data');",
+                  "});",
+                  "",
+                  "pm.test(\"Message contains user input\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.include('Hello from server');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Testing the API\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/hello",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "hello"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has company data\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('data');",
+                  "    pm.expect(jsonData.data).to.have.property('id');",
+                  "    pm.expect(jsonData.data).to.have.property('username');",
+                  "});",
+                  "",
+                  "pm.test(\"Success message displayed\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.include('registered successfully');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company\": {\n    \"username\": \"pt_sms_company\",\n    \"password\": \"SecurePassword123!\",\n    \"company_name\": \"PT SMS Manufacturing\",\n    \"email\": \"contact@ptsms.com\",\n    \"phone\": \"+6281234567890\",\n    \"role\": \"user\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has JWT token\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('token');",
+                  "    pm.expect(jsonData.data.token).to.be.a('string');",
+                  "    pm.expect(jsonData.data.token.length).to.be.greaterThan(0);",
+                  "});",
+                  "",
+                  "pm.test(\"Token saved to environment\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('auth_token', jsonData.data.token);",
+                  "    pm.environment.set('company_id', jsonData.data.company.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"pt_sms_company\",\n  \"password\": \"SecurePassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Validate Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Token validation response is correct\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('valid');",
+                  "    pm.expect(jsonData.data.valid).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{auth_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/validate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "validate"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "No authentication required"
+    },
+    {
+      "name": "Purchase Orders",
+      "item": [
+        {
+          "name": "Get All Purchase Orders",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response is an array\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test(\"Each PO has required fields\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data.length > 0) {",
+                  "        var po = jsonData.data[0];",
+                  "        pm.expect(po).to.have.property('id');",
+                  "        pm.expect(po).to.have.property('po_number');",
+                  "        pm.expect(po).to.have.property('status');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/purchase-orders?page=1&limit=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "purchase-orders"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Purchase Order by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has PO details\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('po_number');",
+                  "    pm.expect(jsonData.data).to.have.property('status');",
+                  "    pm.expect(jsonData.data).to.have.property('company_id');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/purchase-orders/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "purchase-orders",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Purchase Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {\n    pm.response.to.have.status(201);\n});\n\npm.test(\"Success message displayed\", function () {\n    var jsonData = pm.response.json();\n    pm.expect(jsonData.message).to.include('Successfully');\n});"
+                ]
+              }
+            }
+          ],
+           "request": {
+             "auth": {
+               "type": "bearer",
+               "bearer": [
+                 {
+                   "key": "token",
+                   "value": "{{auth_token}}",
+                   "type": "string"
+                 }
+               ]
+             },
+             "method": "POST",
+             "header": [],
+             "body": {
+               "mode": "formdata",
+               "formdata": [
+                 {
+                   "key": "payload",
+                   "type": "text",
+                   "value": "{\"po_number\":\"PO-2026-{{$randomInt(1000, 9999)}}\",\"company_id\":{{company_id}},\"resi_number\":\"RESI-{{$randomInt(100000, 999999)}}\",\"notes\":\"Sample purchase order for testing\",\"status\":\"verifying\"}"
+                 },
+                 {
+                   "key": "file",
+                   "type": "file",
+                   "src": ""
+                 }
+               ]
+             },
+             "url": {
+               "raw": "{{base_url}}/api/purchase-orders",
+               "host": [
+                 "{{base_url}}"
+               ],
+               "path": [
+                 "api",
+                 "purchase-orders"
+               ]
+             }
+           },
+          "response": []
+        },
+        {
+          "name": "Update Purchase Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Success message displayed\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.include('Successfully');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"po_number\": \"PO-2026-UPDATED\",\n  \"resi_number\": \"RESI-UPDATED-123456\",\n  \"notes\": \"Updated notes for this purchase order\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/purchase-orders/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "purchase-orders",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Purchase Order Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Status updated successfully\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.include('updated');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"process\",\n  \"notes\": \"Order is now being processed\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/purchase-orders/1/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "purchase-orders",
+                "1",
+                "status"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Purchase Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Success message displayed\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.include('Successfully');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/purchase-orders/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "purchase-orders",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Purchase Orders by Company",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test(\"Status code is 200\", function () {",
+                    "    pm.response.to.have.status(200);",
+                    "});",
+                    "",
+                    "pm.test(\"Response is an array\", function () {",
+                    "    var jsonData = pm.response.json();",
+                    "    pm.expect(jsonData.data).to.be.an('array');",
+                    "});"
+                  ]
+                }
+              ]
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/purchase-orders/company/{{company_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "purchase-orders",
+                "company",
+                "{{company_id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Protected endpoints for purchase order management (requires authentication)"
+    },
+    {
+      "name": "File Management",
+      "item": [
+        {
+          "name": "Upload File",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 202\", function () {",
+                  "    pm.response.to.have.status(202);",
+                  "});",
+                  "",
+                  "pm.test(\"Upload success message\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.include('successfully');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "description": "Base64 encoded sample PDF or image file",
+                  "src": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/upload",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "upload"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Download File",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/download/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "download",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Protected endpoints for file upload and download (requires authentication)"
+    },
+    {
+      "name": "Company Management",
+      "item": [
+        {
+          "name": "Get Company Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has company data\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('data');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/companies/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "companies",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Company Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Profile update message\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.include('updated');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_name\": \"PT SMS Updated Name\",\n  \"email\": \"newemail@ptsms.com\",\n  \"phone\": \"+6281234567899\",\n  \"role\": \"user\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/companies/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "companies",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Change Password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Password change success\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.include('successfully');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"current_password\": \"SecurePassword123!\",\n  \"new_password\": \"NewSecurePassword456!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/change-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "change-password"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Protected endpoints for company profile management (requires authentication)"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{auth_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Pre-request script to handle common setup"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global test script"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3455",
+      "description": "API Base URL"
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "description": "JWT Authentication Token (automatically set by login endpoint)"
+    },
+    {
+      "key": "company_id",
+      "value": "",
+      "description": "Company ID (automatically set by login endpoint)"
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+# Backend
+../backend
+../database.schema
+
+# Node lock files when building (will reinstall)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Dependencies cache
+node_modules
+
+# Build outputs
+dist
+build
+
+# IDE and OS
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+*.swp
+
+# Git
+.git
+.gitignore
+
+# Docs and env
+README.md
+.env.local
+*.log

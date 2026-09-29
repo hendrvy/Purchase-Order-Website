@@ -14,7 +14,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: docker/Dockerfile
+      dockerfile: backend/docker/Dockerfile
     container_name: go-api
     ports:
       - "3455:3455"
@@ -26,12 +26,12 @@ services:
   nginx:
     build:
       context: .
-      dockerfile: docker/Dockerfile.nginx
+      dockerfile: backend/docker/Dockerfile.nginx
     container_name: nginx-web
     ports:
       - "80:80"
     volumes:
-      - ./web:/usr/share/nginx/html:ro
+      - ./frontend/dist:/usr/share/nginx/html:ro
     depends_on:
       - api
 

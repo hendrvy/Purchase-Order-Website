@@ -1,4 +1,4 @@
-import { Navigate, Outlet, useLocation } from 'react-router-dom'
+import { Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext.jsx'
 
 /**
@@ -7,14 +7,18 @@ import { useAuth } from '@/context/AuthContext.jsx'
 
 /**
  * Guards nested routes: redirects to /login when not authenticated, and
- * optionally enforces a role allow-list (used from Fase 2+ for
- * approver/admin-only routes).
+ * optionally enforces a role allow-list (used for validator/admin-only
+ * routes).
+ *
+ * Note: intentionally does NOT pass the current location via
+ * `state.from` - after logging in, the user always lands on /dashboard
+ * rather than being sent back to whatever protected page they originally
+ * tried to visit (see LoginPage.jsx).
  *
  * @param {{ allowedRoles?: readonly Role[] }} props
  */
 export function ProtectedRoute({ allowedRoles }) {
   const { user, token, isLoading } = useAuth()
-  const location = useLocation()
 
   if (isLoading) {
     return (
@@ -25,7 +29,7 @@ export function ProtectedRoute({ allowedRoles }) {
   }
 
   if (!token || !user) {
-    return <Navigate to="/login" state={{ from: location }} replace />
+    return <Navigate to="/login" replace />
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {

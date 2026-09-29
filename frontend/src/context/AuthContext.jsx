@@ -13,6 +13,7 @@ import { clearAuthStorage, getStoredToken, getStoredUser, setAuthStorage } from 
  * @property {boolean} isLoading - true while restoring session from localStorage on mount.
  * @property {(credentials: LoginCredentials) => Promise<LoginResult>} login
  * @property {() => void} logout
+ * @property {(partialUser: Partial<AuthUser>, newToken?: string) => void} updateUser - Merges partial fields into the stored user (and swaps in a fresh token if the backend reissued one, e.g. after a username/email change) without requiring a re-login.
  */
 
 /** @type {import('react').Context<AuthContextValue | undefined>} */
@@ -47,8 +48,19 @@ export function AuthProvider({ children }) {
     setUser(null)
   }, [])
 
+  const updateUser = useCallback((partialUser, newToken) => {
+    setUser((prev) => {
+      const next = { ...prev, ...partialUser }
+      setAuthStorage(newToken ?? token, next)
+      return next
+    })
+    if (newToken) {
+      setToken(newToken)
+    }
+  }, [token])
+
   return (
-    <AuthContext value={{ user, token, isLoading, login, logout }}>
+    <AuthContext value={{ user, token, isLoading, login, logout, updateUser }}>
       {children}
     </AuthContext>
   )

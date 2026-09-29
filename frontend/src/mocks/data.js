@@ -4,48 +4,51 @@
 
 /**
  * Dummy credential/user pairs used by the mock auth layer (src/api/auth.js)
- * while the real backend contract (email + role based User) is not ready
- * yet. Passwords are plain text here on purpose - this is mock-only data,
- * never sent to or stored by a real backend.
+ * when VITE_USE_MOCKS=true, for developing without a running backend.
+ * Passwords are plain text here on purpose - this is mock-only data, never
+ * sent to or stored by a real backend.
  *
- * @type {Array<{ email: string, password: string, user: AuthUser }>}
+ * @type {Array<{ username: string, password: string, user: AuthUser }>}
  */
 export const MOCK_ACCOUNTS = [
   {
-    email: 'buyer@mail.com',
+    username: 'budi.user',
     password: 'password123',
     user: {
-      id: 'usr-buyer-1',
-      email: 'buyer@mail.com',
-      full_name: 'Budi Buyer',
-      role: 'buyer',
-      is_active: true,
+      id: 1,
+      username: 'budi.user',
+      company_name: 'PT Budi Jaya',
+      email: 'budi@mail.com',
+      phone: '+6281111111111',
+      role: 'user',
       created_at: '2025-01-01T00:00:00.000Z',
       updated_at: '2025-01-01T00:00:00.000Z',
     },
   },
   {
-    email: 'approver@mail.com',
+    username: 'andi.validator',
     password: 'password123',
     user: {
-      id: 'usr-approver-1',
-      email: 'approver@mail.com',
-      full_name: 'Andi Approver',
-      role: 'approver',
-      is_active: true,
+      id: 2,
+      username: 'andi.validator',
+      company_name: 'PT Andi Validasi',
+      email: 'andi@mail.com',
+      phone: '+6282222222222',
+      role: 'validator',
       created_at: '2025-01-01T00:00:00.000Z',
       updated_at: '2025-01-01T00:00:00.000Z',
     },
   },
   {
-    email: 'admin@mail.com',
+    username: 'sari.admin',
     password: 'password123',
     user: {
-      id: 'usr-admin-1',
-      email: 'admin@mail.com',
-      full_name: 'Sari Admin',
+      id: 3,
+      username: 'sari.admin',
+      company_name: 'PT Sari Admin',
+      email: 'sari@mail.com',
+      phone: '+6283333333333',
       role: 'admin',
-      is_active: true,
       created_at: '2025-01-01T00:00:00.000Z',
       updated_at: '2025-01-01T00:00:00.000Z',
     },

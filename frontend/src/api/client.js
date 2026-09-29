@@ -21,7 +21,8 @@ export class ApiError extends Error {
 }
 
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080',
+  // Backend (backend/cmd/main.go) listens on :3455 by default.
+  baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3455',
   headers: {
     'Content-Type': 'application/json',
   },

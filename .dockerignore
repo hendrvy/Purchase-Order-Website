@@ -1,0 +1,50 @@
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# IDEs and editors
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Node
+node_modules
+npm-debug.log
+yarn-error.log
+.npm
+
+# OS
+Thumbs.db
+desktop.ini
+
+# Documentation
+README.md
+*.md
+
+# Environment
+.env.local
+.env.*.local
+
+# Build outputs (will be rebuilt)
+frontend/build
+backend/.build
+
+# Docker
+docker-compose.override.yml
+Dockerfile*
+.docker
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.circleci
+
+# Misc
+*.log
+.cache
+.temp
+psql.bat
