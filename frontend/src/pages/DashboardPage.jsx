@@ -34,7 +34,7 @@ export function DashboardPage() {
         <>
           {isAdmin && (
             <div className="space-y-3">
-              <h2 className="text-sm font-semibold text-gray-700">1. Informasi Akun</h2>
+              <h2 className="text-sm font-semibold text-gray-700">Informasi Akun</h2>
               <UserRoleSummaryCards companies={companies} />
             </div>
           )}
@@ -44,7 +44,7 @@ export function DashboardPage() {
                 section above isn't rendered, so the sections stay
                 sequentially numbered regardless of role. */}
             <h2 className="text-sm font-semibold text-gray-700">
-              {isAdmin ? '2' : '1'}. Informasi PO
+              Informasi PO
             </h2>
             <SummaryCards orders={orders} />
           </div>

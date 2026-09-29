@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { ChevronUp, ChevronDown, LogOut, User } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext.jsx'
 import { ROLE_LABELS, isAdminLikeRole } from '@/types/role.js'
@@ -62,12 +62,12 @@ export function AppLayout() {
       <aside className="sticky top-0 flex h-screen w-64 flex-shrink-0 flex-col overflow-y-auto bg-white">
 
         {/* Logo */}
-        <div className="px-6 py-6 text-center">
+        <Link to="/dashboard" className="block px-6 py-6 text-center">
           <img src={logo} alt="SMS Order" className="mx-auto h-10 w-auto" />
           <h1 className="text-xl font-bold text-[#B00100]">
             SMS Order
           </h1>
-        </div>
+        </Link>
 
         {/* Navigation */}
         <nav className="flex flex-col gap-2 px-4">

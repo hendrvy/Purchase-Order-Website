@@ -25,6 +25,20 @@
   --color-status-rejected-bg: #fee2e2;
 }
 
+/* Chart-only status colors (darker than the badge -bg tint, lighter than
+   the solid -text color). These live outside @theme - unlike the badge
+   colors above, they're only ever referenced via var(...) in JS
+   (StatusDistributionChart.jsx), never as a Tailwind utility class name,
+   so Tailwind's @theme tree-shaking would otherwise strip them out of the
+   build since it can't detect that usage by scanning for class names. */
+:root {
+  --color-status-verifying-chart: #70a4df;
+  --color-status-process-chart: #fdce35;
+  --color-status-shipping-chart: #a794f5;
+  --color-status-complete-chart: #53ca7f;
+  --color-status-rejected-chart: #e07d7d;
+}
+
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: 'Inter Variable', sans-serif;

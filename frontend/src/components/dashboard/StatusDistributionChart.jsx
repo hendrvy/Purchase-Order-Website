@@ -36,7 +36,7 @@ function buildChartData(orders) {
       status,
       {
         label: getStatusConfig(status).label,
-        color: `var(--color-status-${status})`,
+        color: `var(--color-status-${status}-chart)`,
       },
     ]),
   )
@@ -77,7 +77,7 @@ export function StatusDistributionChart({ orders }) {
             <ChartTooltip content={<ChartTooltipContent nameKey="status" />} />
             <Bar dataKey="count" radius={[4, 4, 0, 0]}>
               {data.map((entry) => (
-                <Cell key={entry.status} fill={`var(--color-status-${entry.status})`} />
+                <Cell key={entry.status} fill={`var(--color-status-${entry.status}-chart)`} />
               ))}
             </Bar>
           </BarChart>
