@@ -1,18 +1,13 @@
-# Backend
-../backend
-../database.schema
-
-# Node lock files when building (will reinstall)
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
-
-# Dependencies cache
+# Dependencies (will reinstall from package.json)
 node_modules
 
-# Build outputs
+# Build outputs (will be rebuilt)
 dist
 build
+
+# Lock files (will reinstall)
+yarn.lock
+pnpm-lock.yaml
 
 # IDE and OS
 .vscode
@@ -25,7 +20,7 @@ Thumbs.db
 .git
 .gitignore
 
-# Docs and env
+# Docs and logs
 README.md
 .env.local
 *.log
