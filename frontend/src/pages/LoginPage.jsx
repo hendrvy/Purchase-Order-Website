@@ -59,7 +59,7 @@ export function LoginPage() {
 
       {/* Header */}
       <div className="text-center">
-        <h1 className="text-5xl font-semibold tracking-wider text-[#4A4141]">
+        <h1 className="text-3xl font-semibold tracking-wider text-[#4A4141] sm:text-5xl">
           Welcome to <br />
           SMS ORDER
         </h1>
