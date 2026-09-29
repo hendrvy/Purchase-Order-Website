@@ -115,135 +115,237 @@ export function UserManagementPage() {
       )}
 
       {!isLoading && !isError && (
-        <Card className="py-0">
-          <CardContent className="px-0">
+        <>
+          {/* Mobile card list (< md) - same rationale as HistoryTable.jsx:
+              the table below has a fixed ~1360px width designed for
+              desktop columns, so on narrow screens it's replaced entirely
+              by a stacked list of cards instead of forcing a horizontal
+              scroll. Hidden from `md` up via `md:hidden`. */}
+          <div className="flex flex-col gap-3 md:hidden">
             {companies.length === 0 ? (
-              <div className="w-[1360px] max-w-full px-5 py-6 text-center text-sm text-gray-400">
-                Tidak ada user yang cocok dengan filter ini.
-              </div>
+              <Card>
+                <CardContent className="px-5 py-6 text-center text-sm text-gray-400">
+                  Tidak ada user yang cocok dengan filter ini.
+                </CardContent>
+              </Card>
             ) : (
-              <div className="overflow-x-auto">
-                {/* Same fixed-width-column approach as HistoryTable.jsx -
-                    see the comments there for the full rationale. In
-                    short: table-fixed + explicit <colgroup> widths keep
-                    every column a consistent width regardless of which
-                    row data happens to be visible (filter/search change,
-                    long names, etc.), and a fixed `w-[1360px]` (matching
-                    the colgroup sum exactly, reused on the empty state
-                    above) stops the table/Card from stretching to fill a
-                    wider container or shrinking to fit a short "no
-                    results" message. Perusahaan/Email wrap onto a second
-                    line instead of truncating with '...' once they no
-                    longer fit; Username/Telepon/Terdaftar stay single-line
-                    since those values are always short in practice. */}
-                <table className="w-[1360px] table-fixed text-left text-sm">
-                  <colgroup>
-                    <col className="w-40" />
-                    <col className="w-64" />
-                    <col className="w-72" />
-                    <col className="w-40" />
-                    <col className="w-44" />
-                    <col className="w-36" />
-                    <col className="w-44" />
-                  </colgroup>
-                  <thead>
-                    <tr className="border-b border-gray-100 text-xs font-medium text-gray-500">
-                      <th className="px-5 py-3">Username</th>
-                      <th className="px-5 py-3">Perusahaan</th>
-                      <th className="px-5 py-3">Email</th>
-                      <th className="px-5 py-3">Telepon</th>
-                      <th className="px-5 py-3">Role</th>
-                      <th className="px-5 py-3">Terdaftar</th>
-                      <th className="px-5 py-3">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {companies.map((company) => {
-                      const isSelf = company.id === currentUser?.id
-                      // super_admin's role/password are permanently locked
-                      // - can't be changed by anyone via the app, not even
-                      // by another super_admin. See backend RoleSuperAdmin.
-                      const isSuperAdmin = company.role === 'super_admin'
+              companies.map((company) => {
+                const isSelf = company.id === currentUser?.id
+                const isSuperAdmin = company.role === 'super_admin'
 
-                      return (
-                        <tr key={company.id} className="align-top hover:bg-gray-50">
-                          <td className="overflow-hidden px-5 py-3 font-medium text-gray-900">
-                            <span className="block w-full min-w-0 truncate">
-                              {company.username}
-                            </span>
-                          </td>
-                          <td className="px-5 py-3 text-gray-700">
-                            <span className="block w-full break-words whitespace-normal">
-                              {company.company_name}
-                            </span>
-                          </td>
-                          <td className="px-5 py-3 text-gray-700">
-                            <span className="block w-full break-words whitespace-normal">
-                              {company.email}
-                            </span>
-                          </td>
-                          <td className="overflow-hidden px-5 py-3 text-gray-700">
-                            <span className="block w-full min-w-0 truncate">
-                              {company.phone || <span className="text-gray-400">-</span>}
-                            </span>
-                          </td>
-                          <td className="px-5 py-3">
-                            {isSuperAdmin ? (
-                              <span
-                                className="inline-flex items-center rounded-[20px] border border-[#B00100] bg-red-50 px-3 py-1 text-xs font-medium text-[#B00100]"
-                                title="Role Super Admin terkunci permanen, tidak bisa diubah siapapun"
-                              >
-                                {ROLE_LABELS.super_admin}
-                              </span>
-                            ) : (
-                              <select
-                                value={company.role}
-                                disabled={isSelf || updateRoleMutation.isPending}
-                                onChange={(event) => handleRoleChange(company, event.target.value)}
-                                title={isSelf ? 'Tidak bisa mengubah role sendiri' : undefined}
-                                className={selectClassName}
-                              >
-                                {ASSIGNABLE_ROLES.map((role) => (
-                                  <option key={role} value={role}>
-                                    {ROLE_LABELS[role]}
-                                  </option>
-                                ))}
-                              </select>
-                            )}
-                          </td>
-                          <td className="overflow-hidden px-5 py-3 text-gray-500">
-                            <span className="block w-full min-w-0 truncate">
-                              {company.created_at ? formatDate(company.created_at) : '-'}
-                            </span>
-                          </td>
-                          <td className="overflow-hidden px-5 py-3">
-                            {isSuperAdmin ? (
-                              <span
-                                className="text-xs text-gray-400"
-                                title="Password Super Admin hanya bisa diubah oleh akun itu sendiri lewat halaman Profile"
-                              >
-                                -
-                              </span>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => setResetPasswordTarget(company)}
-                                className="flex items-center gap-1 text-xs text-gray-600 hover:text-[#B00100] hover:underline"
-                              >
-                                <KeyRound size={13} />
-                                Reset Password
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                return (
+                  <Card key={company.id} className="py-0">
+                    <CardContent className="flex flex-col gap-3 px-4 py-4">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{company.username}</p>
+                        <p className="mt-0.5 break-words text-sm text-gray-700">
+                          {company.company_name}
+                        </p>
+                      </div>
+
+                      <div className="flex justify-between gap-3 text-xs">
+                        <span className="text-gray-400">Email</span>
+                        <span className="text-right break-words text-gray-700">
+                          {company.email}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between gap-3 text-xs">
+                        <span className="text-gray-400">Telepon</span>
+                        <span className="text-right text-gray-700">{company.phone || '-'}</span>
+                      </div>
+
+                      <div className="flex justify-between gap-3 text-xs">
+                        <span className="text-gray-400">Terdaftar</span>
+                        <span className="text-right text-gray-500">
+                          {company.created_at ? formatDate(company.created_at) : '-'}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-3 border-t border-gray-100 pt-2">
+                        <span className="text-xs text-gray-400">Role</span>
+                        {isSuperAdmin ? (
+                          <span
+                            className="inline-flex items-center rounded-[20px] border border-[#B00100] bg-red-50 px-3 py-1 text-xs font-medium text-[#B00100]"
+                            title="Role Super Admin terkunci permanen, tidak bisa diubah siapapun"
+                          >
+                            {ROLE_LABELS.super_admin}
+                          </span>
+                        ) : (
+                          <select
+                            value={company.role}
+                            disabled={isSelf || updateRoleMutation.isPending}
+                            onChange={(event) => handleRoleChange(company, event.target.value)}
+                            title={isSelf ? 'Tidak bisa mengubah role sendiri' : undefined}
+                            className={selectClassName}
+                          >
+                            {ASSIGNABLE_ROLES.map((role) => (
+                              <option key={role} value={role}>
+                                {ROLE_LABELS[role]}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-xs text-gray-400">Aksi</span>
+                        {isSuperAdmin ? (
+                          <span
+                            className="text-xs text-gray-400"
+                            title="Password Super Admin hanya bisa diubah oleh akun itu sendiri lewat halaman Profile"
+                          >
+                            -
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setResetPasswordTarget(company)}
+                            className="flex items-center gap-1 text-xs text-gray-600 hover:text-[#B00100] hover:underline"
+                          >
+                            <KeyRound size={13} />
+                            Reset Password
+                          </button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })
             )}
-          </CardContent>
-        </Card>
+          </div>
+
+          {/* Desktop table (>= md) - unchanged from before. */}
+          <Card className="hidden py-0 md:block">
+            <CardContent className="px-0">
+              {companies.length === 0 ? (
+                <div className="w-[1360px] max-w-full px-5 py-6 text-center text-sm text-gray-400">
+                  Tidak ada user yang cocok dengan filter ini.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  {/* Same fixed-width-column approach as HistoryTable.jsx -
+                      see the comments there for the full rationale. In
+                      short: table-fixed + explicit <colgroup> widths keep
+                      every column a consistent width regardless of which
+                      row data happens to be visible (filter/search change,
+                      long names, etc.), and a fixed `w-[1360px]` (matching
+                      the colgroup sum exactly, reused on the empty state
+                      above) stops the table/Card from stretching to fill a
+                      wider container or shrinking to fit a short "no
+                      results" message. Perusahaan/Email wrap onto a second
+                      line instead of truncating with '...' once they no
+                      longer fit; Username/Telepon/Terdaftar stay single-line
+                      since those values are always short in practice. */}
+                  <table className="w-[1360px] table-fixed text-left text-sm">
+                    <colgroup>
+                      <col className="w-40" />
+                      <col className="w-64" />
+                      <col className="w-72" />
+                      <col className="w-40" />
+                      <col className="w-44" />
+                      <col className="w-36" />
+                      <col className="w-44" />
+                    </colgroup>
+                    <thead>
+                      <tr className="border-b border-gray-100 text-xs font-medium text-gray-500">
+                        <th className="px-5 py-3">Username</th>
+                        <th className="px-5 py-3">Perusahaan</th>
+                        <th className="px-5 py-3">Email</th>
+                        <th className="px-5 py-3">Telepon</th>
+                        <th className="px-5 py-3">Role</th>
+                        <th className="px-5 py-3">Terdaftar</th>
+                        <th className="px-5 py-3">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {companies.map((company) => {
+                        const isSelf = company.id === currentUser?.id
+                        // super_admin's role/password are permanently locked
+                        // - can't be changed by anyone via the app, not even
+                        // by another super_admin. See backend RoleSuperAdmin.
+                        const isSuperAdmin = company.role === 'super_admin'
+
+                        return (
+                          <tr key={company.id} className="align-top hover:bg-gray-50">
+                            <td className="overflow-hidden px-5 py-3 font-medium text-gray-900">
+                              <span className="block w-full min-w-0 truncate">
+                                {company.username}
+                              </span>
+                            </td>
+                            <td className="px-5 py-3 text-gray-700">
+                              <span className="block w-full break-words whitespace-normal">
+                                {company.company_name}
+                              </span>
+                            </td>
+                            <td className="px-5 py-3 text-gray-700">
+                              <span className="block w-full break-words whitespace-normal">
+                                {company.email}
+                              </span>
+                            </td>
+                            <td className="overflow-hidden px-5 py-3 text-gray-700">
+                              <span className="block w-full min-w-0 truncate">
+                                {company.phone || <span className="text-gray-400">-</span>}
+                              </span>
+                            </td>
+                            <td className="px-5 py-3">
+                              {isSuperAdmin ? (
+                                <span
+                                  className="inline-flex items-center rounded-[20px] border border-[#B00100] bg-red-50 px-3 py-1 text-xs font-medium text-[#B00100]"
+                                  title="Role Super Admin terkunci permanen, tidak bisa diubah siapapun"
+                                >
+                                  {ROLE_LABELS.super_admin}
+                                </span>
+                              ) : (
+                                <select
+                                  value={company.role}
+                                  disabled={isSelf || updateRoleMutation.isPending}
+                                  onChange={(event) => handleRoleChange(company, event.target.value)}
+                                  title={isSelf ? 'Tidak bisa mengubah role sendiri' : undefined}
+                                  className={selectClassName}
+                                >
+                                  {ASSIGNABLE_ROLES.map((role) => (
+                                    <option key={role} value={role}>
+                                      {ROLE_LABELS[role]}
+                                    </option>
+                                  ))}
+                                </select>
+                              )}
+                            </td>
+                            <td className="overflow-hidden px-5 py-3 text-gray-500">
+                              <span className="block w-full min-w-0 truncate">
+                                {company.created_at ? formatDate(company.created_at) : '-'}
+                              </span>
+                            </td>
+                            <td className="overflow-hidden px-5 py-3">
+                              {isSuperAdmin ? (
+                                <span
+                                  className="text-xs text-gray-400"
+                                  title="Password Super Admin hanya bisa diubah oleh akun itu sendiri lewat halaman Profile"
+                                >
+                                  -
+                                </span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => setResetPasswordTarget(company)}
+                                  className="flex items-center gap-1 text-xs text-gray-600 hover:text-[#B00100] hover:underline"
+                                >
+                                  <KeyRound size={13} />
+                                  Reset Password
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </>
       )}
 
       {isAddAccountOpen && <AddAccountModal onClose={() => setIsAddAccountOpen(false)} />}
