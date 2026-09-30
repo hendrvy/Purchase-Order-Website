@@ -87,29 +87,45 @@ export function AppLayout() {
         />
       )}
 
-      {/* Sidebar - `sticky top-0 h-screen` keeps it pinned to the viewport
-          with its own fixed height, independent of how tall <main>'s
-          content is. Without this, the sidebar (a flex item) stretches to
-          match the height of the tallest sibling (main), so on long pages
-          the whole <aside> - including the `mt-auto` profile section at
-          its bottom - grows taller and the profile dropdown ends up
-          rendered far down the page instead of staying anchored near the
-          bottom of the visible screen. `overflow-y-auto` lets the nav
-          links scroll internally on short viewports instead of pushing
-          the profile section off-screen.
+      {/* Sidebar - always `fixed inset-y-0 left-0 h-screen`, on every
+          breakpoint, so it's pinned to the actual browser viewport
+          regardless of how tall <main>'s content is (e.g. the History
+          page's long table). `<main>` gets a matching `lg:ml-64` below to
+          leave room for it once it's out of normal document flow.
 
-          On small screens the sidebar becomes a fixed off-canvas drawer
-          that slides in from the left (`-translate-x-full` when closed),
-          sitting above the backdrop. From `lg` up it reverts to the
-          normal sticky in-flow sidebar. */}
+          We previously used `lg:sticky lg:top-0` on desktop instead of
+          `fixed`, which kept the sidebar in-flow as a flex item. That
+          works in the simple case, but `position: sticky`'s containing
+          block/scrollport can get miscomputed by some browsers once an
+          ancestor (`html`/`body` in index.css) has any non-`visible`
+          overflow set - which we do, for an unrelated horizontal-overflow
+          guard. The symptom was the profile section at the bottom of the
+          sidebar drifting upward while scrolling a long page instead of
+          staying pinned to the bottom of the viewport. `position: fixed`
+          has no such ambiguity - it's always relative to the viewport (as
+          long as no ancestor has a transform/filter, which none do here) -
+          so switching to `fixed` on all breakpoints sidesteps the bug
+          entirely.
+
+          The logo and profile blocks below use `flex-shrink-0` so they
+          keep their natural size and never scroll; only the middle `<nav>`
+          gets `overflow-y-auto` so long nav lists scroll internally on
+          short viewports without dragging the logo or profile along with
+          them.
+
+          On small screens the sidebar is an off-canvas drawer that slides
+          in from the left (`-translate-x-full` when closed), sitting above
+          the backdrop. From `lg` up it's forced open (`lg:translate-x-0`)
+          and simply stays fixed in place. */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex h-screen w-64 flex-shrink-0 flex-col overflow-y-auto bg-white transition-transform duration-200 ease-in-out lg:sticky lg:top-0 lg:z-auto lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex h-screen w-64 flex-shrink-0 flex-col bg-white transition-transform duration-200 ease-in-out lg:translate-x-0 ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
 
-        {/* Logo */}
-        <div className="flex items-center justify-between px-6 py-6">
+        {/* Logo - `flex-shrink-0` keeps it pinned at the top of the
+            sidebar, never scrolling with the nav list below it. */}
+        <div className="flex flex-shrink-0 items-center justify-between px-6 py-6">
           <Link to="/dashboard" className="block flex-1 text-center">
             <img src={logo} alt="SMS Order" className="mx-auto h-10 w-auto" />
             <h1 className="text-xl font-bold text-[#B00100]">
@@ -126,8 +142,8 @@ export function AppLayout() {
           </button>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex flex-col gap-2 px-4">
+        {/* Navigation - the only scrollable region of the sidebar. */}
+        <nav className="flex flex-1 flex-col gap-2 overflow-y-auto px-4">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
@@ -145,8 +161,9 @@ export function AppLayout() {
           ))}
         </nav>
 
-        {/* Profile */}
-        <div ref={profileRef} className="mt-auto px-4 py-4">
+        {/* Profile - `flex-shrink-0` keeps it pinned at the bottom of the
+            sidebar, never scrolling with the nav list above it. */}
+        <div ref={profileRef} className="flex-shrink-0 px-4 py-4">
 
           {/* Dropdown */}
           {isProfileOpen && (
@@ -211,8 +228,10 @@ export function AppLayout() {
 
       {/* Main Content - `pt-20` on mobile clears the fixed top bar (h-14)
           plus breathing room; `lg:pt-6` restores the normal padding once
-          the top bar is hidden and the sidebar is back in-flow. */}
-      <main className="min-w-0 flex-1 px-4 pt-20 pb-6 sm:px-6 lg:pt-6">
+          the top bar is hidden. `lg:ml-64` makes room for the sidebar,
+          which is now `fixed` (taken out of document flow) on all
+          breakpoints instead of participating as a flex sibling. */}
+      <main className="min-w-0 flex-1 px-4 pt-20 pb-6 sm:px-6 lg:ml-64 lg:pt-6">
         <Outlet />
       </main>
 
