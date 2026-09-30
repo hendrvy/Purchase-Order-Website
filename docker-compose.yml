@@ -40,7 +40,7 @@ services:
       - dokploy-network
 
 volumes:
-  postgres_data
+  postgres_data: {}
 
 networks:
   dokploy-network:
