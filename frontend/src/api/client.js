@@ -21,8 +21,12 @@ export class ApiError extends Error {
 }
 
 export const apiClient = axios.create({
-  // Backend (backend/cmd/main.go) listens on :3455 by default.
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? '/api',
+  // Backend (backend/cmd/main.go) listens on :3455 by default, but nginx
+  // proxies /api/* to it (see backend/docker/nginx.conf), so the frontend
+  // always calls same-origin relative paths (e.g. apiClient.get('/api/...'))
+  // - no absolute base URL needed, which also makes this work correctly
+  // across every domain/port the app is deployed behind.
+  baseURL: '',
   headers: {
     'Content-Type': 'application/json',
   },
