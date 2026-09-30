@@ -33,7 +33,7 @@ services:
       dockerfile: backend/docker/Dockerfile.nginx
     container_name: nginx-web
     ports:
-      - "8001:8001"
+      - "81:80"
     depends_on:
       - api
     networks:
