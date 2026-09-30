@@ -21,6 +21,3 @@ web/
 *.dll
 *.so
 *.dylib
-/backend/server
-/backend/main
-/backend/*.out
