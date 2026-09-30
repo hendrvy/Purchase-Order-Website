@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { Card, CardContent } from '@/components/ui/card.jsx'
 import { Button } from '@/components/ui/button.jsx'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog.jsx'
 import { useAuth } from '@/context/AuthContext.jsx'
 import { formatDate } from '@/lib/format.js'
 import { ASSIGNABLE_ROLES, ROLE_LABELS } from '@/types/role.js'
@@ -26,6 +27,8 @@ export function UserManagementPage() {
   const [search, setSearch] = useState('')
   const [isAddAccountOpen, setIsAddAccountOpen] = useState(false)
   const [resetPasswordTarget, setResetPasswordTarget] = useState(null)
+  /** @type {[{ company: object, newRole: string } | null, Function]} */
+  const [pendingRoleChange, setPendingRoleChange] = useState(null)
 
   const {
     data: companies = [],
@@ -36,14 +39,27 @@ export function UserManagementPage() {
 
   const updateRoleMutation = useUpdateCompanyRoleMutation()
 
+  // Only stages the change and opens a confirmation dialog - the actual
+  // mutation only fires once the admin confirms (see confirmRoleChange
+  // below). Without this, picking a new option in the <select> would
+  // change a user's access immediately with a single misclick, which is
+  // risky for a permission-altering action.
   const handleRoleChange = (company, newRole) => {
     if (newRole === company.role) return
+    setPendingRoleChange({ company, newRole })
+  }
+
+  const confirmRoleChange = () => {
+    if (!pendingRoleChange) return
+    const { company, newRole } = pendingRoleChange
 
     updateRoleMutation.mutate(
       { id: company.id, role: newRole },
       {
-        onSuccess: () =>
-          toast.success(`Role ${company.username} diubah menjadi ${ROLE_LABELS[newRole]}.`),
+        onSuccess: () => {
+          toast.success(`Role ${company.username} diubah menjadi ${ROLE_LABELS[newRole]}.`)
+          setPendingRoleChange(null)
+        },
         onError: (err) => toast.error(err?.message ?? 'Gagal mengubah role.'),
       },
     )
@@ -354,6 +370,27 @@ export function UserManagementPage() {
         <ResetPasswordModal
           targetUser={resetPasswordTarget}
           onClose={() => setResetPasswordTarget(null)}
+        />
+      )}
+
+      {pendingRoleChange && (
+        <ConfirmDialog
+          title="Ubah Role"
+          description={
+            <>
+              Ubah role <span className="font-medium text-gray-900">{pendingRoleChange.company.username}</span>{' '}
+              dari <span className="font-medium text-gray-900">{ROLE_LABELS[pendingRoleChange.company.role]}</span>{' '}
+              menjadi{' '}
+              <span className="font-medium text-gray-900">
+                {ROLE_LABELS[pendingRoleChange.newRole]}
+              </span>
+              ? Perubahan ini akan langsung berlaku dan memengaruhi hak akses akun tersebut.
+            </>
+          }
+          confirmLabel="Ubah Role"
+          isLoading={updateRoleMutation.isPending}
+          onConfirm={confirmRoleChange}
+          onCancel={() => setPendingRoleChange(null)}
         />
       )}
     </section>
