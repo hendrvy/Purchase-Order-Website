@@ -1,0 +1,22 @@
+# Development-only image for the Go API - installs air-verse/air for
+# hot-reload and expects source code to be bind-mounted at /app by
+# docker-compose.dev.yml (see that file), so editing backend/*.go never
+# requires rebuilding this image or running `docker compose build` again.
+# NOT used in production (docker-compose.yml / backend/docker/Dockerfile
+# still do a real static-binary build for that).
+FROM golang:1.26-alpine
+
+WORKDIR /app
+
+RUN go install github.com/air-verse/air@latest
+
+# Pre-download modules into the image layer cache so the very first
+# `docker compose up` doesn't need to hit the network again on every
+# container restart. Bind-mounting go.mod/go.sum here also means `go mod
+# download` re-runs automatically if dependencies ever change.
+COPY backend/go.mod backend/go.sum ./
+RUN go mod download
+
+EXPOSE 3455
+
+CMD ["air", "-c", ".air.toml"]

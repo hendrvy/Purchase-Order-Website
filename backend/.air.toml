@@ -1,0 +1,38 @@
+# Config for air-verse/air (https://github.com/air-verse/air) - watches
+# *.go files and rebuilds + restarts the server automatically. Used by
+# the `api` service in docker-compose.dev.yml (see backend/docker/Dockerfile.dev)
+# so editing backend code never requires `docker compose build` again.
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -o ./tmp/server ./cmd/main.go"
+  bin = "./tmp/server"
+  full_bin = "./tmp/server"
+  include_ext = ["go"]
+  exclude_dir = ["tmp", "uploads", "db", "docker"]
+  exclude_regex = ["_test.go"]
+  delay = 1000
+  stop_on_error = true
+  send_interrupt = true
+  kill_delay = "2s"
+  # Docker Desktop on Windows (bind mounts backed by WSL2/OneDrive) often
+  # doesn't forward native filesystem change events (inotify/fsnotify)
+  # from the host into the container, so air's default watcher never
+  # fires even though the file *is* updated inside the container. Poll
+  # instead of relying on those events - slightly more CPU, but it's the
+  # only reliable way to detect host-side edits in this environment.
+  poll = true
+  poll_interval = 500
+
+[log]
+  time = true
+
+[color]
+  main = "magenta"
+  watcher = "cyan"
+  build = "yellow"
+  runner = "green"
+
+[misc]
+  clean_on_exit = true

@@ -1,0 +1,23 @@
+# Development-only image for the frontend - runs `vite build --watch`
+# instead of a one-shot `vite build`, so it stays running and rebuilds
+# `dist/` automatically whenever source files change. Paired with
+# docker-compose.dev.yml, which bind-mounts frontend/ source code into
+# this container AND shares the resulting dist/ folder with the nginx
+# container via a named volume - editing any file under frontend/src
+# never requires `docker compose build` again (just refresh the browser
+# once the watcher finishes rebuilding, usually 1-3s).
+#
+# NOT used in production (backend/docker/Dockerfile.nginx still does a
+# real one-shot `vite build` baked into the nginx image for that).
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Installed once when the image is built; node_modules is later
+# overlaid by the bind mount in docker-compose.dev.yml only for source
+# folders (src/, public/, etc.), not node_modules, so this layer stays
+# cached across restarts.
+COPY package*.json ./
+RUN npm ci
+
+CMD ["npm", "run", "build", "--", "--watch"]

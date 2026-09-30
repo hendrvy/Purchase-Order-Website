@@ -49,10 +49,23 @@ npm run dev
 ```
 
 ### Docker Compose
+
+**Production** (build sekali jadi image statis, `nginx` serve hasil `vite build`, `api` adalah binary Go yang sudah dikompilasi):
 ```bash
 cp .env.example .env   # di root project
-docker-compose up
+docker compose up --build
 ```
+Setiap ubah kode, harus `docker compose up --build` ulang.
+
+**Development** (hot-reload, tidak perlu `docker compose build` manual lagi setelah run pertama):
+```bash
+cp .env.example .env   # di root project
+docker compose -f docker-compose.dev.yml up --build   # run pertama kali, atau setelah ubah go.mod/package.json
+docker compose -f docker-compose.dev.yml up           # run berikutnya
+```
+- Edit `backend/**/*.go` → [air](https://github.com/air-verse/air) otomatis rebuild + restart binary Go.
+- Edit `frontend/src/**` → `vite build --watch` otomatis rebuild `dist/`, nginx langsung serve versi baru (refresh browser saja, tanpa command apapun).
+- Ubah dependency (`go.mod`/`go.sum`, `package.json`) → jalankan ulang dengan `--build` sekali untuk install ulang.
 
 ## Environment Variables
 - `backend/.env.example` — dipakai saat menjalankan backend langsung via `go run` (bukan docker).
