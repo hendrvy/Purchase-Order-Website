@@ -10,6 +10,8 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - dokploy-network
 
   api:
     build:
@@ -22,16 +24,24 @@ services:
       - .env
     depends_on:
       - postgres
+    networks:
+      - dokploy-network
 
   nginx:
     build:
-      context: .
+      context: .  
       dockerfile: backend/docker/Dockerfile.nginx
     container_name: nginx-web
     ports:
-      - "80:80"
+      - "8001:8001"
     depends_on:
       - api
+    networks:
+      - dokploy-network
 
 volumes:
-  postgres_data:
+  postgres_data
+
+networks:
+  dokploy-network:
+  external: true
