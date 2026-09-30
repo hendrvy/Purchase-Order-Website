@@ -9,6 +9,11 @@ import (
 )
 
 func main() {
+	// Handle CLI commands and exit if needed
+	if HandleCLI() {
+		return
+	}
+
 	router := gin.Default()
 
 	// Setup middleware
