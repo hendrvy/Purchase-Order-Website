@@ -16,10 +16,6 @@ func main() {
 
 	router := gin.Default()
 
-	// Set higher multipart form size limit (100MB) to handle large file uploads
-	// This must be done before any middleware that might parse the form
-	router.MaxMultipartMemory = 100 * 1024 * 1024 // 100MB
-
 	// Setup middleware
 	router.Use(api.CORSMiddleware())
 

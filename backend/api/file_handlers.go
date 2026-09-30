@@ -157,10 +157,10 @@ func UploadFile(c *gin.Context) {
 	})
 }
 
-// UploadMultipleAttachments - Upload multiple file attachments (max 10 files, 50MB each)
+// UploadMultipleAttachments - Upload multiple file attachments (max 10 files, 5MB each)
 func UploadMultipleAttachments(c *gin.Context) {
 	const MaxFiles = 10
-	const MaxFileSize = 50 * 1024 * 1024 // 50MB in bytes
+	const MaxFileSize = 5 * 1024 * 1024 // 5MB in bytes
 
 	// Parse multipart form with size limit
 	err := c.Request.ParseMultipartForm(MaxFileSize * MaxFiles)

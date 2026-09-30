@@ -14,9 +14,9 @@ import (
 // ============================================================================
 
 const (
-	MaxFileSize         = 50 * 1024 * 1024 // 50MB per file
-	MaxAttachmentsPerPO = 10               // Maximum attachments allowed per purchase order
-	MaxPhotoSize        = 10 * 1024 * 1024 // 10MB - profile photos
+	MaxFileSize         = 5 * 1024 * 1024 // 5MB
+	MaxAttachmentsPerPO = 10              // Maximum attachments allowed per purchase order
+	MaxPhotoSize        = 2 * 1024 * 1024 // 2MB - profile photos should be small
 )
 
 var (
