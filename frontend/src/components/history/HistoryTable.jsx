@@ -34,25 +34,17 @@ export function HistoryTable({ orders }) {
     (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
   )
 
-  // Fixed table width (see the <table> comment below for why it's a fixed
-  // px value rather than `w-full`). Reused on the empty state below too -
-  // otherwise the Card would shrink to fit the short "no results" message
-  // whenever a filter/search produces zero rows, then jump back wide again
-  // once results return, which reads exactly like "the table width keeps
-  // changing" even though the table itself never resizes.
-  // Must equal the exact sum of the <colgroup> widths below: No.PO(176) +
-  // [Perusahaan(192) +] Judul(320) + No.Resi(160) + Total(144) +
-  // Status(160) + File(192) + Diperbarui(144).
-  const tableWidthClass = showCompanyColumn ? 'w-[1488px]' : 'w-[1296px]'
-
   return (
     <>
-      {/* Mobile card list (< md): the table below is fixed-width and
-          designed for desktop columns, so on narrow screens it's replaced
-          entirely by a stacked list of cards - one per order - instead of
-          forcing users to scroll a ~1300px+ table horizontally. Hidden
-          from `md` up via `md:hidden`. */}
-      <div className="flex flex-col gap-3 md:hidden">
+      {/* Mobile/tablet card list (< lg): below `lg` there isn't enough
+          width for 7-8 fluid table columns to stay readable (see the
+          <table> comment below - it's `w-full` with percentage-based
+          columns, so it never overflows, but on narrower screens those
+          percentages shrink to the point of wrapping every cell onto
+          multiple lines and feeling cramped). Replaced entirely by a
+          stacked list of cards - one per order - instead. Hidden from
+          `lg` up via `lg:hidden`. */}
+      <div className="flex flex-col gap-3 lg:hidden">
         {sortedOrders.length === 0 ? (
           <Card>
             <CardContent className="px-5 py-6 text-center text-sm text-gray-400">
@@ -110,42 +102,44 @@ export function HistoryTable({ orders }) {
         )}
       </div>
 
-      {/* Desktop table (>= md) - unchanged from before. */}
-      <Card className="hidden py-0 md:block">
+      {/* Desktop table (>= lg). */}
+      <Card className="hidden py-0 lg:block">
         <CardContent className="px-0">
           {sortedOrders.length === 0 ? (
-            <div className={`${tableWidthClass} max-w-full px-5 py-6 text-center text-sm text-gray-400`}>
+            <div className="w-full px-5 py-6 text-center text-sm text-gray-400">
               Belum ada purchase order dengan status ini.
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <>
               {/* table-fixed + explicit per-column widths (set once via
-                  <colgroup>) keep every column the same width regardless of
-                  cell content - without this, the default auto layout
-                  re-measures column widths off whatever row data happens to
-                  be visible (long filenames, long titles, the status
-                  dropdown opening, etc.), making the whole table visibly
-                  resize/jump as data changes.
-                  Deliberately NOT `w-full`: the table's width is set to the
-                  exact sum of its <col> widths below (see tableWidthClass
-                  above), so it never stretches to fill a wider container. If it did
-                  (e.g. w-full with only a min-width), the browser would
-                  redistribute any leftover space unevenly across columns
-                  whenever the container's available width changed slightly
-                  (which happens on every filter/search change, since a
-                  different row count can toggle the page's vertical
-                  scrollbar on/off) - producing the exact width "jumping"
-                  this is meant to prevent. */}
-              <table className={`table-fixed text-left text-sm ${tableWidthClass}`}>
+                  <colgroup>, as percentages that sum to 100%) keep every
+                  column a stable *proportion* of the table regardless of
+                  cell content - without `table-fixed`, the default auto
+                  layout re-measures column widths off whatever row data
+                  happens to be visible (long filenames, long titles, the
+                  status dropdown opening, etc.), making the whole table
+                  visibly resize/jump as data changes.
+                  `w-full` (rather than a fixed px sum) means the table
+                  always exactly fills its container - it can never be
+                  wider than the viewport, so there's no horizontal
+                  scrollbar to fight with on narrower `lg`/`xl` screens.
+                  Percentages (not `w-full`+`min-width` per <col>) are what
+                  keep column proportions identical at every width instead
+                  of the browser redistributing leftover space unevenly
+                  whenever the container's available width changes slightly
+                  (e.g. a filter/search toggling the page's vertical
+                  scrollbar on/off) - that uneven redistribution is what
+                  reads as the table "jumping". */}
+              <table className="w-full table-fixed text-left text-sm">
                 <colgroup>
-                  <col className="w-44" />
-                  {showCompanyColumn && <col className="w-48" />}
-                  <col className="w-80" />
-                  <col className="w-40" />
-                  <col className="w-36" />
-                  <col className="w-40" />
-                  <col className="w-48" />
-                  <col className="w-36" />
+                  <col className={showCompanyColumn ? 'w-[12%]' : 'w-[13.5%]'} />
+                  {showCompanyColumn && <col className="w-[13%]" />}
+                  <col className={showCompanyColumn ? 'w-[21.5%]' : 'w-[24.5%]'} />
+                  <col className={showCompanyColumn ? 'w-[11%]' : 'w-[12.5%]'} />
+                  <col className={showCompanyColumn ? 'w-[9.5%]' : 'w-[11%]'} />
+                  <col className={showCompanyColumn ? 'w-[11%]' : 'w-[12.5%]'} />
+                  <col className={showCompanyColumn ? 'w-[13%]' : 'w-[15%]'} />
+                  <col className={showCompanyColumn ? 'w-[9.5%]' : 'w-[11%]'} />
                 </colgroup>
                 <thead>
                   <tr className="border-b border-gray-100 text-xs font-medium text-gray-500">
@@ -228,7 +222,7 @@ export function HistoryTable({ orders }) {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </>
           )}
         </CardContent>
       </Card>
