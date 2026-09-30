@@ -56,7 +56,7 @@ export function AppLayout() {
   }, [location.pathname])
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-dvh bg-gray-50">
 
       {/* Mobile top bar - only visible below the `lg` breakpoint. Gives
           mobile users a hamburger button to open the off-canvas sidebar,
@@ -87,7 +87,7 @@ export function AppLayout() {
         />
       )}
 
-      {/* Sidebar - always `fixed inset-y-0 left-0 h-screen`, on every
+      {/* Sidebar - always `fixed inset-y-0 left-0 h-dvh`, on every
           breakpoint, so it's pinned to the actual browser viewport
           regardless of how tall <main>'s content is (e.g. the History
           page's long table). `<main>` gets a matching `lg:ml-64` below to
@@ -107,6 +107,20 @@ export function AppLayout() {
           so switching to `fixed` on all breakpoints sidesteps the bug
           entirely.
 
+          `h-dvh` (not `h-screen`/`100vh`) matters specifically on mobile:
+          `100vh` is the *largest possible* viewport height, i.e. as if the
+          browser's address/toolbar were fully collapsed - even while
+          they're actually visible taking up real screen space. That made
+          this `fixed` sidebar taller than the space actually visible on
+          screen, pushing the profile block (Nama + Role) at the bottom
+          past the visible viewport - it was still there, just scrolled
+          out of view (e.g. only reachable by scrolling the page, even
+          though the sidebar itself has no business scrolling). `100dvh`
+          ("dynamic viewport height") continuously tracks the *actual*
+          visible viewport as the address bar shows/hides, so the sidebar
+          - and the profile block pinned to its bottom - always exactly
+          matches what's really on screen.
+
           The logo and profile blocks below use `flex-shrink-0` so they
           keep their natural size and never scroll; only the middle `<nav>`
           gets `overflow-y-auto` so long nav lists scroll internally on
@@ -118,7 +132,7 @@ export function AppLayout() {
           the backdrop. From `lg` up it's forced open (`lg:translate-x-0`)
           and simply stays fixed in place. */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex h-screen w-64 flex-shrink-0 flex-col bg-white transition-transform duration-200 ease-in-out lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex h-dvh w-64 flex-shrink-0 flex-col bg-white transition-transform duration-200 ease-in-out lg:translate-x-0 ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
