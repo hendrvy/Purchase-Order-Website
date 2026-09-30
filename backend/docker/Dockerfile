@@ -12,7 +12,7 @@ COPY backend/api/ ./api/
 COPY backend/cmd/ ./cmd/
 
 # Build binary, CGO disabled agar binary static (cocok untuk alpine)
-RUN CGO_ENABLED=0 GOOS=linux go build -o server ./cmd/main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -o server ./cmd
 
 # Stage 2: Runner
 FROM alpine:latest
