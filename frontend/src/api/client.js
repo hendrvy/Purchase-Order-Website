@@ -21,10 +21,8 @@ export class ApiError extends Error {
 }
 
 export const apiClient = axios.create({
-  // Use empty baseURL so relative paths work from any domain (localhost, Cloudflare tunnel, production, etc.)
-  // API routes in auth.js, po.js, etc. define full paths like /api/login, /api/purchase-orders
-  // Nginx proxies /api/* requests to the Go backend at api:3455
-  baseURL: '',
+  // Backend (backend/cmd/main.go) listens on :3455 by default.
+  baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3455',
   headers: {
     'Content-Type': 'application/json',
   },
