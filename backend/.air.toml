@@ -6,7 +6,11 @@ root = "."
 tmp_dir = "tmp"
 
 [build]
-  cmd = "go build -o ./tmp/server ./cmd/main.go"
+  # Must build the whole `./cmd` package (not just `./cmd/main.go`) to
+  # match backend/docker/Dockerfile's production build command - cmd/
+  # has multiple files (main.go, cli.go, etc.) and building only main.go
+  # fails with "undefined: HandleCLI" since that symbol lives in cli.go.
+  cmd = "go build -o ./tmp/server ./cmd"
   bin = "./tmp/server"
   full_bin = "./tmp/server"
   include_ext = ["go"]

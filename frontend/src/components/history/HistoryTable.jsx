@@ -1,7 +1,11 @@
 import { useState } from 'react'
+import { Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
 import { Card, CardContent } from '@/components/ui/card.jsx'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog.jsx'
 import { formatCurrency, formatDate } from '@/lib/format.js'
 import { useAuth } from '@/context/AuthContext.jsx'
+import { useDeletePOMutation } from '@/hooks/useDeletePOMutation.js'
 import { POStatusUpdateControl } from '@/components/history/POStatusUpdateControl.jsx'
 import { AttachmentThumbnailList } from '@/components/history/AttachmentThumbnailList.jsx'
 import { AttachmentPreviewModal } from '@/components/history/AttachmentPreviewModal.jsx'
@@ -24,6 +28,9 @@ export function HistoryTable({ orders }) {
   const { user } = useAuth()
   /** @type {[Attachment | null, (a: Attachment | null) => void]} */
   const [previewAttachment, setPreviewAttachment] = useState(null)
+  /** @type {[PurchaseOrder | null, (o: PurchaseOrder | null) => void]} */
+  const [pendingDelete, setPendingDelete] = useState(null)
+  const deleteMutation = useDeletePOMutation()
 
   // Only validator/admin(-like) see purchase orders across every company
   // (a plain `user` only ever sees their own), so the "Perusahaan" column
@@ -33,6 +40,30 @@ export function HistoryTable({ orders }) {
   const sortedOrders = [...orders].sort(
     (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
   )
+
+  // A `user` can only cancel their own PO while it's still 'verifying' -
+  // once a validator/admin has started processing it, the user can no
+  // longer delete it (mirrors the backend check in
+  // backend/api/purchase_order_handlers.go DeletePurchaseOrder, which is
+  // the actual source of truth/enforcement; this just hides the button
+  // for cases we already know would be rejected).
+  function canCancel(order) {
+    return user?.role === 'user' && order.company_id === user?.id && order.status === 'verifying'
+  }
+
+  function handleConfirmDelete() {
+    if (!pendingDelete) return
+
+    deleteMutation.mutate(pendingDelete.id, {
+      onSuccess: () => {
+        toast.success(`PO ${pendingDelete.po_number} berhasil dibatalkan.`)
+        setPendingDelete(null)
+      },
+      onError: (error) => {
+        toast.error(error?.message ?? 'Gagal membatalkan purchase order.')
+      },
+    })
+  }
 
   return (
     <>
@@ -60,7 +91,19 @@ export function HistoryTable({ orders }) {
                     <p className="text-sm font-medium text-gray-900">{order.po_number}</p>
                     <p className="mt-0.5 break-words text-sm text-gray-700">{order.title}</p>
                   </div>
-                  <POStatusUpdateControl order={order} role={user?.role} />
+                  <div className="flex shrink-0 items-center gap-2">
+                    <POStatusUpdateControl order={order} role={user?.role} />
+                    {canCancel(order) && (
+                      <button
+                        type="button"
+                        onClick={() => setPendingDelete(order)}
+                        aria-label={`Batalkan PO ${order.po_number}`}
+                        className="rounded-md p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-red-600"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {showCompanyColumn && (
@@ -132,14 +175,15 @@ export function HistoryTable({ orders }) {
                   reads as the table "jumping". */}
               <table className="w-full table-fixed text-left text-sm">
                 <colgroup>
-                  <col className={showCompanyColumn ? 'w-[12%]' : 'w-[13.5%]'} />
-                  {showCompanyColumn && <col className="w-[13%]" />}
-                  <col className={showCompanyColumn ? 'w-[21.5%]' : 'w-[24.5%]'} />
                   <col className={showCompanyColumn ? 'w-[11%]' : 'w-[12.5%]'} />
-                  <col className={showCompanyColumn ? 'w-[9.5%]' : 'w-[11%]'} />
-                  <col className={showCompanyColumn ? 'w-[11%]' : 'w-[12.5%]'} />
-                  <col className={showCompanyColumn ? 'w-[13%]' : 'w-[15%]'} />
-                  <col className={showCompanyColumn ? 'w-[9.5%]' : 'w-[11%]'} />
+                  {showCompanyColumn && <col className="w-[12%]" />}
+                  <col className={showCompanyColumn ? 'w-[20%]' : 'w-[23.5%]'} />
+                  <col className={showCompanyColumn ? 'w-[10%]' : 'w-[11.5%]'} />
+                  <col className={showCompanyColumn ? 'w-[9%]' : 'w-[10%]'} />
+                  <col className={showCompanyColumn ? 'w-[10%]' : 'w-[11.5%]'} />
+                  <col className={showCompanyColumn ? 'w-[12%]' : 'w-[14%]'} />
+                  <col className={showCompanyColumn ? 'w-[9%]' : 'w-[10%]'} />
+                  <col className="w-[7%]" />
                 </colgroup>
                 <thead>
                   <tr className="border-b border-gray-100 text-xs font-medium text-gray-500">
@@ -151,6 +195,7 @@ export function HistoryTable({ orders }) {
                     <th className="px-5 py-3">Status</th>
                     <th className="px-5 py-3">File</th>
                     <th className="px-5 py-3">Diperbarui</th>
+                    <th className="px-5 py-3" aria-label="Aksi" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -218,6 +263,18 @@ export function HistoryTable({ orders }) {
                           {formatDate(order.updated_at)}
                         </span>
                       </td>
+                      <td className="px-5 py-3 text-center">
+                        {canCancel(order) && (
+                          <button
+                            type="button"
+                            onClick={() => setPendingDelete(order)}
+                            aria-label={`Batalkan PO ${order.po_number}`}
+                            className="rounded-md p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-red-600"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -231,6 +288,24 @@ export function HistoryTable({ orders }) {
         attachment={previewAttachment}
         onClose={() => setPreviewAttachment(null)}
       />
+
+      {pendingDelete && (
+        <ConfirmDialog
+          title="Batalkan Purchase Order"
+          description={
+            <>
+              Batalkan PO{' '}
+              <span className="font-medium text-gray-900">{pendingDelete.po_number}</span>?
+              Tindakan ini tidak dapat dibatalkan.
+            </>
+          }
+          confirmLabel="Batalkan PO"
+          variant="danger"
+          isLoading={deleteMutation.isPending}
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setPendingDelete(null)}
+        />
+      )}
     </>
   )
 }

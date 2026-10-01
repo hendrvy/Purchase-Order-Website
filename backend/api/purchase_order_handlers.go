@@ -276,7 +276,11 @@ func UpdatePurchaseOrder(c *gin.Context) {
 	})
 }
 
-// DeletePurchaseOrder - Delete (soft delete) purchase order
+// DeletePurchaseOrder - Delete (soft delete) purchase order. A plain
+// `user` may only cancel their own PO while it's still in "verifying"
+// status - once a validator/admin has started processing it (process/
+// shipping/complete/rejected), the user can no longer delete it.
+// Validator/admin are not restricted by status here (existing behavior).
 func DeletePurchaseOrder(c *gin.Context) {
 	poIDstr := c.Param("id")
 	var poID uint
@@ -294,7 +298,7 @@ func DeletePurchaseOrder(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	userRole := c.GetString("role")
 
-	ownerID, err := GetPurchaseOrderOwner(poID)
+	purchaseOrder, err := GetPurchaseOrderByIDDB(poID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, JsonResponse{
 			Status:  http.StatusNotFound,
@@ -304,13 +308,24 @@ func DeletePurchaseOrder(c *gin.Context) {
 		return
 	}
 
-	if userRole == "user" && ownerID != userID {
-		c.JSON(http.StatusForbidden, JsonResponse{
-			Status:  http.StatusForbidden,
-			Error:   "Access denied",
-			Message: "You do not have permission to delete this purchase order",
-		})
-		return
+	if userRole == "user" {
+		if purchaseOrder.CompanyID != userID {
+			c.JSON(http.StatusForbidden, JsonResponse{
+				Status:  http.StatusForbidden,
+				Error:   "Access denied",
+				Message: "You do not have permission to delete this purchase order",
+			})
+			return
+		}
+
+		if purchaseOrder.Status != "verifying" {
+			c.JSON(http.StatusForbidden, JsonResponse{
+				Status:  http.StatusForbidden,
+				Error:   "Access denied",
+				Message: "Only purchase orders still in 'verifying' status can be cancelled",
+			})
+			return
+		}
 	}
 
 	err = DeletePurchaseOrderDB(poID)

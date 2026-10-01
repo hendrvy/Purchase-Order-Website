@@ -208,3 +208,34 @@ export async function updatePurchaseOrderStatus(id, input) {
 
   await apiClient.put(`/api/purchase-orders/${id}/status`, input)
 }
+
+/**
+ * Cancels (deletes) a purchase order. Only callable by the owning `user`
+ * while the PO is still in 'verifying' status - the backend rejects the
+ * request with 403 otherwise (see
+ * backend/api/purchase_order_handlers.go DeletePurchaseOrder).
+ *
+ * @param {number} id
+ * @returns {Promise<void>}
+ */
+export async function deletePurchaseOrder(id) {
+  if (shouldUseMocks()) {
+    await delay(400)
+
+    const order = MOCK_PURCHASE_ORDERS.find((item) => item.id === id)
+    if (!order) {
+      throw new ApiError('Purchase order tidak ditemukan.', { status: 404 })
+    }
+    if (order.status !== 'verifying') {
+      throw new ApiError("Hanya PO dengan status 'Verifying' yang dapat dibatalkan.", {
+        status: 403,
+      })
+    }
+
+    const index = MOCK_PURCHASE_ORDERS.indexOf(order)
+    MOCK_PURCHASE_ORDERS.splice(index, 1)
+    return
+  }
+
+  await apiClient.delete(`/api/purchase-orders/${id}`)
+}
