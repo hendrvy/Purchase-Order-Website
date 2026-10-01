@@ -4,13 +4,17 @@ import { toast } from 'sonner'
 import { Card, CardContent } from '@/components/ui/card.jsx'
 import { Button } from '@/components/ui/button.jsx'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog.jsx'
+import { Pagination } from '@/components/ui/Pagination.jsx'
 import { useAuth } from '@/context/AuthContext.jsx'
 import { formatDate } from '@/lib/format.js'
 import { ASSIGNABLE_ROLES, ROLE_LABELS } from '@/types/role.js'
 import { useCompaniesQuery } from '@/hooks/useCompaniesQuery.js'
 import { useUpdateCompanyRoleMutation } from '@/hooks/useUpdateCompanyRoleMutation.js'
+import { usePagination } from '@/hooks/usePagination.js'
 import { AddAccountModal } from '@/components/admin/AddAccountModal.jsx'
 import { ResetPasswordModal } from '@/components/admin/ResetPasswordModal.jsx'
+
+const PAGE_SIZE = 10
 
 const selectClassName =
   'rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm focus:border-[#D97745] focus:outline-none focus:ring-1 focus:ring-[#D97745] disabled:cursor-not-allowed disabled:opacity-50'
@@ -38,6 +42,8 @@ export function UserManagementPage() {
   } = useCompaniesQuery({ role: roleFilter, search })
 
   const updateRoleMutation = useUpdateCompanyRoleMutation()
+
+  const { page, pageCount, pageItems, totalItems, setPage } = usePagination(companies, PAGE_SIZE)
 
   // Only stages the change and opens a confirmation dialog - the actual
   // mutation only fires once the admin confirms (see confirmRoleChange
@@ -145,7 +151,7 @@ export function UserManagementPage() {
                 </CardContent>
               </Card>
             ) : (
-              companies.map((company) => {
+              pageItems.map((company) => {
                 const isSelf = company.id === currentUser?.id
                 const isSuperAdmin = company.role === 'super_admin'
 
@@ -234,6 +240,16 @@ export function UserManagementPage() {
                 )
               })
             )}
+            {companies.length > 0 && (
+              <Pagination
+                page={page}
+                pageCount={pageCount}
+                totalItems={totalItems}
+                pageSize={PAGE_SIZE}
+                onPageChange={setPage}
+                className="border-t-0 px-0"
+              />
+            )}
           </div>
 
           {/* Desktop table (>= md) - unchanged from before. */}
@@ -283,7 +299,7 @@ export function UserManagementPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                      {companies.map((company) => {
+                      {pageItems.map((company) => {
                         const isSelf = company.id === currentUser?.id
                         // super_admin's role/password are permanently locked
                         // - can't be changed by anyone via the app, not even
@@ -369,6 +385,15 @@ export function UserManagementPage() {
                     </tbody>
                   </table>
                 </div>
+              )}
+              {companies.length > 0 && (
+                <Pagination
+                  page={page}
+                  pageCount={pageCount}
+                  totalItems={totalItems}
+                  pageSize={PAGE_SIZE}
+                  onPageChange={setPage}
+                />
               )}
             </CardContent>
           </Card>
