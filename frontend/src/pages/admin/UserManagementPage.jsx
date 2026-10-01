@@ -314,10 +314,18 @@ export function UserManagementPage() {
                         return (
                           <tr key={company.id} className="align-top hover:bg-gray-50">
                             <td className="overflow-hidden px-5 py-3 text-gray-500">
-                              <span className="block w-full min-w-0 truncate">#{company.id}</span>
+                              <span
+                                className="block w-full min-w-0 truncate"
+                                title={`#${company.id}`}
+                              >
+                                #{company.id}
+                              </span>
                             </td>
                             <td className="overflow-hidden px-5 py-3 font-medium text-gray-900">
-                              <span className="block w-full min-w-0 truncate">
+                              <span
+                                className="block w-full min-w-0 truncate"
+                                title={company.username}
+                              >
                                 {company.username}
                               </span>
                             </td>
@@ -332,7 +340,10 @@ export function UserManagementPage() {
                               </span>
                             </td>
                             <td className="overflow-hidden px-5 py-3 text-gray-700">
-                              <span className="block w-full min-w-0 truncate">
+                              <span
+                                className="block w-full min-w-0 truncate"
+                                title={company.phone || undefined}
+                              >
                                 {company.phone || <span className="text-gray-400">-</span>}
                               </span>
                             </td>
@@ -361,7 +372,10 @@ export function UserManagementPage() {
                               )}
                             </td>
                             <td className="overflow-hidden px-5 py-3 text-gray-500">
-                              <span className="block w-full min-w-0 truncate">
+                              <span
+                                className="block w-full min-w-0 truncate"
+                                title={company.created_at ? formatDate(company.created_at) : undefined}
+                              >
                                 {company.created_at ? formatDate(company.created_at) : '-'}
                               </span>
                             </td>

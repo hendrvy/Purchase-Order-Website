@@ -269,7 +269,10 @@ export function HistoryTable({ orders }) {
                         </span>
                       </td>
                       <td className="overflow-hidden px-5 py-3 text-right text-gray-900">
-                        <span className="block w-full min-w-0 truncate">
+                        <span
+                          className="block w-full min-w-0 truncate"
+                          title={formatCurrency(order.total_amount)}
+                        >
                           {formatCurrency(order.total_amount)}
                         </span>
                       </td>
