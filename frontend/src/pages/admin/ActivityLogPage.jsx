@@ -1,11 +1,15 @@
 import { useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card.jsx'
+import { Pagination } from '@/components/ui/Pagination.jsx'
 import { formatDateTime } from '@/lib/format.js'
+import { usePagination } from '@/hooks/usePagination.js'
 import {
   useDownloadLogsQuery,
   usePasswordChangeLogsQuery,
   useProfileChangeLogsQuery,
 } from '@/hooks/useAuditLogsQuery.js'
+
+const PAGE_SIZE = 10
 
 const TABS = [
   { key: 'profile', label: 'Perubahan Profil' },
@@ -36,12 +40,18 @@ function ProfileChangeTable() {
     return <p className="px-5 py-6 text-center text-sm text-gray-400">Belum ada aktivitas.</p>
   }
 
+  return <ProfileChangeTableBody logs={logs} />
+}
+
+function ProfileChangeTableBody({ logs }) {
+  const { page, pageCount, pageItems, totalItems, setPage } = usePagination(logs, PAGE_SIZE)
+
   return (
     <>
       {/* Mobile card list (< md) - see HistoryTable.jsx for the general
           rationale of swapping wide tables for stacked cards below md. */}
       <div className="flex flex-col gap-3 p-4 md:hidden">
-        {logs.map((log) => (
+        {pageItems.map((log) => (
           <div key={log.id} className="rounded-lg border border-gray-100 p-3 text-sm">
             <div className="flex items-center justify-between gap-3">
               <span className="font-medium text-gray-900">#{log.user_id}</span>
@@ -62,42 +72,59 @@ function ProfileChangeTable() {
             <p className="mt-2 text-xs text-gray-400">IP: {log.ip_address || '-'}</p>
           </div>
         ))}
+        <Pagination
+          page={page}
+          pageCount={pageCount}
+          totalItems={totalItems}
+          pageSize={PAGE_SIZE}
+          onPageChange={setPage}
+          className="border-t-0 px-0"
+        />
       </div>
 
       {/* Desktop table (>= md) - unchanged from before. */}
-      <div className="hidden overflow-x-auto md:block">
-        <table className="w-full min-w-[680px] text-left text-sm">
-          <thead>
-            <tr className="border-b border-gray-100 text-xs font-medium text-gray-500">
-              <th className="px-5 py-3">User ID</th>
-              <th className="px-5 py-3">Field</th>
-              <th className="px-5 py-3">Sebelum</th>
-              <th className="px-5 py-3">Sesudah</th>
-              <th className="px-5 py-3">IP</th>
-              <th className="px-5 py-3">Waktu</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {logs.map((log) => (
-              <tr key={log.id} className="align-top hover:bg-gray-50">
-                <td className="px-5 py-3 whitespace-nowrap text-gray-700">#{log.user_id}</td>
-                <td className="px-5 py-3 whitespace-nowrap text-gray-700">
-                  {FIELD_LABELS[log.field_name] ?? log.field_name}
-                </td>
-                <td className="max-w-[180px] px-5 py-3 text-gray-500">
-                  <p className="truncate">{log.old_value || '-'}</p>
-                </td>
-                <td className="max-w-[180px] px-5 py-3 text-gray-900">
-                  <p className="truncate">{log.new_value || '-'}</p>
-                </td>
-                <td className="px-5 py-3 whitespace-nowrap text-gray-500">{log.ip_address || '-'}</td>
-                <td className="px-5 py-3 whitespace-nowrap text-gray-500">
-                  {formatDateTime(log.changed_at)}
-                </td>
+      <div className="hidden md:block">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[680px] text-left text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 text-xs font-medium text-gray-500">
+                <th className="px-5 py-3">User ID</th>
+                <th className="px-5 py-3">Field</th>
+                <th className="px-5 py-3">Sebelum</th>
+                <th className="px-5 py-3">Sesudah</th>
+                <th className="px-5 py-3">IP</th>
+                <th className="px-5 py-3">Waktu</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {pageItems.map((log) => (
+                <tr key={log.id} className="align-top hover:bg-gray-50">
+                  <td className="px-5 py-3 whitespace-nowrap text-gray-700">#{log.user_id}</td>
+                  <td className="px-5 py-3 whitespace-nowrap text-gray-700">
+                    {FIELD_LABELS[log.field_name] ?? log.field_name}
+                  </td>
+                  <td className="max-w-[180px] px-5 py-3 text-gray-500">
+                    <p className="truncate">{log.old_value || '-'}</p>
+                  </td>
+                  <td className="max-w-[180px] px-5 py-3 text-gray-900">
+                    <p className="truncate">{log.new_value || '-'}</p>
+                  </td>
+                  <td className="px-5 py-3 whitespace-nowrap text-gray-500">{log.ip_address || '-'}</td>
+                  <td className="px-5 py-3 whitespace-nowrap text-gray-500">
+                    {formatDateTime(log.changed_at)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <Pagination
+          page={page}
+          pageCount={pageCount}
+          totalItems={totalItems}
+          pageSize={PAGE_SIZE}
+          onPageChange={setPage}
+        />
       </div>
     </>
   )
@@ -118,12 +145,18 @@ function PasswordChangeTable() {
     return <p className="px-5 py-6 text-center text-sm text-gray-400">Belum ada aktivitas.</p>
   }
 
+  return <PasswordChangeTableBody logs={logs} />
+}
+
+function PasswordChangeTableBody({ logs }) {
+  const { page, pageCount, pageItems, totalItems, setPage } = usePagination(logs, PAGE_SIZE)
+
   return (
     <>
       {/* Mobile card list (< md) - see HistoryTable.jsx for the general
           rationale of swapping wide tables for stacked cards below md. */}
       <div className="flex flex-col gap-3 p-4 md:hidden">
-        {logs.map((log) => (
+        {pageItems.map((log) => (
           <div
             key={log.id}
             className="flex items-center justify-between gap-3 rounded-lg border border-gray-100 p-3 text-sm"
@@ -135,30 +168,47 @@ function PasswordChangeTable() {
             <span className="text-xs text-gray-500">{formatDateTime(log.changed_at)}</span>
           </div>
         ))}
+        <Pagination
+          page={page}
+          pageCount={pageCount}
+          totalItems={totalItems}
+          pageSize={PAGE_SIZE}
+          onPageChange={setPage}
+          className="border-t-0 px-0"
+        />
       </div>
 
       {/* Desktop table (>= md) - unchanged from before. */}
-      <div className="hidden overflow-x-auto md:block">
-        <table className="w-full min-w-[480px] text-left text-sm">
-          <thead>
-            <tr className="border-b border-gray-100 text-xs font-medium text-gray-500">
-              <th className="px-5 py-3">User ID</th>
-              <th className="px-5 py-3">IP</th>
-              <th className="px-5 py-3">Waktu</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {logs.map((log) => (
-              <tr key={log.id} className="align-top hover:bg-gray-50">
-                <td className="px-5 py-3 whitespace-nowrap text-gray-700">#{log.user_id}</td>
-                <td className="px-5 py-3 whitespace-nowrap text-gray-500">{log.ip_address || '-'}</td>
-                <td className="px-5 py-3 whitespace-nowrap text-gray-500">
-                  {formatDateTime(log.changed_at)}
-                </td>
+      <div className="hidden md:block">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[480px] text-left text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 text-xs font-medium text-gray-500">
+                <th className="px-5 py-3">User ID</th>
+                <th className="px-5 py-3">IP</th>
+                <th className="px-5 py-3">Waktu</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {pageItems.map((log) => (
+                <tr key={log.id} className="align-top hover:bg-gray-50">
+                  <td className="px-5 py-3 whitespace-nowrap text-gray-700">#{log.user_id}</td>
+                  <td className="px-5 py-3 whitespace-nowrap text-gray-500">{log.ip_address || '-'}</td>
+                  <td className="px-5 py-3 whitespace-nowrap text-gray-500">
+                    {formatDateTime(log.changed_at)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <Pagination
+          page={page}
+          pageCount={pageCount}
+          totalItems={totalItems}
+          pageSize={PAGE_SIZE}
+          onPageChange={setPage}
+        />
       </div>
     </>
   )
@@ -179,12 +229,18 @@ function DownloadLogTable() {
     return <p className="px-5 py-6 text-center text-sm text-gray-400">Belum ada aktivitas.</p>
   }
 
+  return <DownloadLogTableBody logs={logs} />
+}
+
+function DownloadLogTableBody({ logs }) {
+  const { page, pageCount, pageItems, totalItems, setPage } = usePagination(logs, PAGE_SIZE)
+
   return (
     <>
       {/* Mobile card list (< md) - see HistoryTable.jsx for the general
           rationale of swapping wide tables for stacked cards below md. */}
       <div className="flex flex-col gap-3 p-4 md:hidden">
-        {logs.map((log) => (
+        {pageItems.map((log) => (
           <div key={log.id} className="rounded-lg border border-gray-100 p-3 text-sm">
             <div className="flex items-center justify-between gap-3">
               <span className="font-medium text-gray-900">PO #{log.po_id}</span>
@@ -196,34 +252,51 @@ function DownloadLogTable() {
             <p className="mt-1 text-xs text-gray-400">IP: {log.ip_address || '-'}</p>
           </div>
         ))}
+        <Pagination
+          page={page}
+          pageCount={pageCount}
+          totalItems={totalItems}
+          pageSize={PAGE_SIZE}
+          onPageChange={setPage}
+          className="border-t-0 px-0"
+        />
       </div>
 
       {/* Desktop table (>= md) - unchanged from before. */}
-      <div className="hidden overflow-x-auto md:block">
-        <table className="w-full min-w-[560px] text-left text-sm">
-          <thead>
-            <tr className="border-b border-gray-100 text-xs font-medium text-gray-500">
-              <th className="px-5 py-3">User ID</th>
-              <th className="px-5 py-3">PO ID</th>
-              <th className="px-5 py-3">Attachment ID</th>
-              <th className="px-5 py-3">IP</th>
-              <th className="px-5 py-3">Waktu</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {logs.map((log) => (
-              <tr key={log.id} className="align-top hover:bg-gray-50">
-                <td className="px-5 py-3 whitespace-nowrap text-gray-700">#{log.user_id}</td>
-                <td className="px-5 py-3 whitespace-nowrap text-gray-700">#{log.po_id}</td>
-                <td className="px-5 py-3 whitespace-nowrap text-gray-700">#{log.attachment_id}</td>
-                <td className="px-5 py-3 whitespace-nowrap text-gray-500">{log.ip_address || '-'}</td>
-                <td className="px-5 py-3 whitespace-nowrap text-gray-500">
-                  {formatDateTime(log.created_at)}
-                </td>
+      <div className="hidden md:block">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[560px] text-left text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 text-xs font-medium text-gray-500">
+                <th className="px-5 py-3">User ID</th>
+                <th className="px-5 py-3">PO ID</th>
+                <th className="px-5 py-3">Attachment ID</th>
+                <th className="px-5 py-3">IP</th>
+                <th className="px-5 py-3">Waktu</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {pageItems.map((log) => (
+                <tr key={log.id} className="align-top hover:bg-gray-50">
+                  <td className="px-5 py-3 whitespace-nowrap text-gray-700">#{log.user_id}</td>
+                  <td className="px-5 py-3 whitespace-nowrap text-gray-700">#{log.po_id}</td>
+                  <td className="px-5 py-3 whitespace-nowrap text-gray-700">#{log.attachment_id}</td>
+                  <td className="px-5 py-3 whitespace-nowrap text-gray-500">{log.ip_address || '-'}</td>
+                  <td className="px-5 py-3 whitespace-nowrap text-gray-500">
+                    {formatDateTime(log.created_at)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <Pagination
+          page={page}
+          pageCount={pageCount}
+          totalItems={totalItems}
+          pageSize={PAGE_SIZE}
+          onPageChange={setPage}
+        />
       </div>
     </>
   )

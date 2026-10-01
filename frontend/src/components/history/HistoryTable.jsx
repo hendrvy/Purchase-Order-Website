@@ -3,13 +3,17 @@ import { Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Card, CardContent } from '@/components/ui/card.jsx'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog.jsx'
+import { Pagination } from '@/components/ui/Pagination.jsx'
 import { formatCurrency, formatDate } from '@/lib/format.js'
 import { useAuth } from '@/context/AuthContext.jsx'
 import { useDeletePOMutation } from '@/hooks/useDeletePOMutation.js'
+import { usePagination } from '@/hooks/usePagination.js'
 import { POStatusUpdateControl } from '@/components/history/POStatusUpdateControl.jsx'
 import { AttachmentThumbnailList } from '@/components/history/AttachmentThumbnailList.jsx'
 import { AttachmentPreviewModal } from '@/components/history/AttachmentPreviewModal.jsx'
 import { isAdminLikeRole } from '@/types/role.js'
+
+const PAGE_SIZE = 10
 
 /**
  * @import { PurchaseOrder } from '@/types/po.js'
@@ -39,6 +43,11 @@ export function HistoryTable({ orders }) {
 
   const sortedOrders = [...orders].sort(
     (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
+  )
+
+  const { page, pageCount, pageItems, totalItems, setPage } = usePagination(
+    sortedOrders,
+    PAGE_SIZE,
   )
 
   // A `user` can only cancel their own PO while it's still 'verifying' -
@@ -83,7 +92,7 @@ export function HistoryTable({ orders }) {
             </CardContent>
           </Card>
         ) : (
-          sortedOrders.map((order) => (
+          pageItems.map((order) => (
             <Card key={order.id} className="py-0">
               <CardContent className="flex flex-col gap-3 px-4 py-4">
                 <div className="flex items-start justify-between gap-3">
@@ -143,6 +152,16 @@ export function HistoryTable({ orders }) {
             </Card>
           ))
         )}
+        {sortedOrders.length > 0 && (
+          <Pagination
+            page={page}
+            pageCount={pageCount}
+            totalItems={totalItems}
+            pageSize={PAGE_SIZE}
+            onPageChange={setPage}
+            className="border-t-0 px-0"
+          />
+        )}
       </div>
 
       {/* Desktop table (>= lg). */}
@@ -199,7 +218,7 @@ export function HistoryTable({ orders }) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {sortedOrders.map((order) => (
+                  {pageItems.map((order) => (
                     <tr key={order.id} className="align-top hover:bg-gray-50">
                       {/* No. PO wraps onto a second line instead of being
                           truncated - long PO numbers used to get cut off
@@ -279,6 +298,13 @@ export function HistoryTable({ orders }) {
                   ))}
                 </tbody>
               </table>
+              <Pagination
+                page={page}
+                pageCount={pageCount}
+                totalItems={totalItems}
+                pageSize={PAGE_SIZE}
+                onPageChange={setPage}
+              />
             </>
           )}
         </CardContent>
