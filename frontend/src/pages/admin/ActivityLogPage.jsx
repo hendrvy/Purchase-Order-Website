@@ -82,42 +82,66 @@ function ProfileChangeTableBody({ logs }) {
         />
       </div>
 
-      {/* Desktop table (>= md) - unchanged from before. */}
-      <div className="hidden md:block">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[680px] text-left text-sm">
-            <thead>
-              <tr className="border-b border-gray-100 text-xs font-medium text-gray-500">
-                <th className="px-5 py-3">User ID</th>
-                <th className="px-5 py-3">Field</th>
-                <th className="px-5 py-3">Sebelum</th>
-                <th className="px-5 py-3">Sesudah</th>
-                <th className="px-5 py-3">IP</th>
-                <th className="px-5 py-3">Waktu</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {pageItems.map((log) => (
-                <tr key={log.id} className="align-top hover:bg-gray-50">
-                  <td className="px-5 py-3 whitespace-nowrap text-gray-700">#{log.user_id}</td>
-                  <td className="px-5 py-3 whitespace-nowrap text-gray-700">
+      {/* Desktop table (>= md). table-fixed + percentage <colgroup> keeps
+          every column a stable proportion of the table regardless of
+          cell content, same rationale as HistoryTable.jsx. */}
+      <div className="hidden py-0 md:block">
+        <table className="w-full table-fixed text-left text-sm">
+          <colgroup>
+            <col className="w-[10%]" />
+            <col className="w-[14%]" />
+            <col className="w-[22%]" />
+            <col className="w-[22%]" />
+            <col className="w-[14%]" />
+            <col className="w-[18%]" />
+          </colgroup>
+          <thead>
+            <tr className="border-b border-gray-100 text-xs font-medium text-gray-500">
+              <th className="px-5 py-3">User ID</th>
+              <th className="px-5 py-3">Field</th>
+              <th className="px-5 py-3">Sebelum</th>
+              <th className="px-5 py-3">Sesudah</th>
+              <th className="px-5 py-3">IP</th>
+              <th className="px-5 py-3">Waktu</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {pageItems.map((log) => (
+              <tr key={log.id} className="align-top hover:bg-gray-50">
+                <td className="px-5 py-3 text-gray-700">
+                  <span className="block w-full break-words whitespace-normal">
+                    #{log.user_id}
+                  </span>
+                </td>
+                <td className="px-5 py-3 text-gray-700">
+                  <span className="block w-full break-words whitespace-normal">
                     {FIELD_LABELS[log.field_name] ?? log.field_name}
-                  </td>
-                  <td className="max-w-[180px] px-5 py-3 text-gray-500">
-                    <p className="truncate">{log.old_value || '-'}</p>
-                  </td>
-                  <td className="max-w-[180px] px-5 py-3 text-gray-900">
-                    <p className="truncate">{log.new_value || '-'}</p>
-                  </td>
-                  <td className="px-5 py-3 whitespace-nowrap text-gray-500">{log.ip_address || '-'}</td>
-                  <td className="px-5 py-3 whitespace-nowrap text-gray-500">
+                  </span>
+                </td>
+                <td className="px-5 py-3 text-gray-500">
+                  <span className="block w-full break-words whitespace-normal">
+                    {log.old_value || '-'}
+                  </span>
+                </td>
+                <td className="px-5 py-3 text-gray-900">
+                  <span className="block w-full break-words whitespace-normal">
+                    {log.new_value || '-'}
+                  </span>
+                </td>
+                <td className="px-5 py-3 text-gray-500">
+                  <span className="block w-full break-words whitespace-normal">
+                    {log.ip_address || '-'}
+                  </span>
+                </td>
+                <td className="px-5 py-3 text-gray-500">
+                  <span className="block w-full break-words whitespace-normal">
                     {formatDateTime(log.changed_at)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
         <Pagination
           page={page}
           pageCount={pageCount}
@@ -178,30 +202,45 @@ function PasswordChangeTableBody({ logs }) {
         />
       </div>
 
-      {/* Desktop table (>= md) - unchanged from before. */}
-      <div className="hidden md:block">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[480px] text-left text-sm">
-            <thead>
-              <tr className="border-b border-gray-100 text-xs font-medium text-gray-500">
-                <th className="px-5 py-3">User ID</th>
-                <th className="px-5 py-3">IP</th>
-                <th className="px-5 py-3">Waktu</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {pageItems.map((log) => (
-                <tr key={log.id} className="align-top hover:bg-gray-50">
-                  <td className="px-5 py-3 whitespace-nowrap text-gray-700">#{log.user_id}</td>
-                  <td className="px-5 py-3 whitespace-nowrap text-gray-500">{log.ip_address || '-'}</td>
-                  <td className="px-5 py-3 whitespace-nowrap text-gray-500">
+      {/* Desktop table (>= md). table-fixed + percentage <colgroup> keeps
+          every column a stable proportion of the table regardless of
+          cell content, same rationale as HistoryTable.jsx. */}
+      <div className="hidden py-0 md:block">
+        <table className="w-full table-fixed text-left text-sm">
+          <colgroup>
+            <col className="w-[30%]" />
+            <col className="w-[35%]" />
+            <col className="w-[35%]" />
+          </colgroup>
+          <thead>
+            <tr className="border-b border-gray-100 text-xs font-medium text-gray-500">
+              <th className="px-5 py-3">User ID</th>
+              <th className="px-5 py-3">IP</th>
+              <th className="px-5 py-3">Waktu</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {pageItems.map((log) => (
+              <tr key={log.id} className="align-top hover:bg-gray-50">
+                <td className="px-5 py-3 text-gray-700">
+                  <span className="block w-full break-words whitespace-normal">
+                    #{log.user_id}
+                  </span>
+                </td>
+                <td className="px-5 py-3 text-gray-500">
+                  <span className="block w-full break-words whitespace-normal">
+                    {log.ip_address || '-'}
+                  </span>
+                </td>
+                <td className="px-5 py-3 text-gray-500">
+                  <span className="block w-full break-words whitespace-normal">
                     {formatDateTime(log.changed_at)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
         <Pagination
           page={page}
           pageCount={pageCount}
@@ -262,34 +301,59 @@ function DownloadLogTableBody({ logs }) {
         />
       </div>
 
-      {/* Desktop table (>= md) - unchanged from before. */}
-      <div className="hidden md:block">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[560px] text-left text-sm">
-            <thead>
-              <tr className="border-b border-gray-100 text-xs font-medium text-gray-500">
-                <th className="px-5 py-3">User ID</th>
-                <th className="px-5 py-3">PO ID</th>
-                <th className="px-5 py-3">Attachment ID</th>
-                <th className="px-5 py-3">IP</th>
-                <th className="px-5 py-3">Waktu</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {pageItems.map((log) => (
-                <tr key={log.id} className="align-top hover:bg-gray-50">
-                  <td className="px-5 py-3 whitespace-nowrap text-gray-700">#{log.user_id}</td>
-                  <td className="px-5 py-3 whitespace-nowrap text-gray-700">#{log.po_id}</td>
-                  <td className="px-5 py-3 whitespace-nowrap text-gray-700">#{log.attachment_id}</td>
-                  <td className="px-5 py-3 whitespace-nowrap text-gray-500">{log.ip_address || '-'}</td>
-                  <td className="px-5 py-3 whitespace-nowrap text-gray-500">
+      {/* Desktop table (>= md). table-fixed + percentage <colgroup> keeps
+          every column a stable proportion of the table regardless of
+          cell content, same rationale as HistoryTable.jsx. */}
+      <div className="hidden py-0 md:block">
+        <table className="w-full table-fixed text-left text-sm">
+          <colgroup>
+            <col className="w-[18%]" />
+            <col className="w-[18%]" />
+            <col className="w-[22%]" />
+            <col className="w-[20%]" />
+            <col className="w-[22%]" />
+          </colgroup>
+          <thead>
+            <tr className="border-b border-gray-100 text-xs font-medium text-gray-500">
+              <th className="px-5 py-3">User ID</th>
+              <th className="px-5 py-3">PO ID</th>
+              <th className="px-5 py-3">Attachment ID</th>
+              <th className="px-5 py-3">IP</th>
+              <th className="px-5 py-3">Waktu</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {pageItems.map((log) => (
+              <tr key={log.id} className="align-top hover:bg-gray-50">
+                <td className="px-5 py-3 text-gray-700">
+                  <span className="block w-full break-words whitespace-normal">
+                    #{log.user_id}
+                  </span>
+                </td>
+                <td className="px-5 py-3 text-gray-700">
+                  <span className="block w-full break-words whitespace-normal">
+                    #{log.po_id}
+                  </span>
+                </td>
+                <td className="px-5 py-3 text-gray-700">
+                  <span className="block w-full break-words whitespace-normal">
+                    #{log.attachment_id}
+                  </span>
+                </td>
+                <td className="px-5 py-3 text-gray-500">
+                  <span className="block w-full break-words whitespace-normal">
+                    {log.ip_address || '-'}
+                  </span>
+                </td>
+                <td className="px-5 py-3 text-gray-500">
+                  <span className="block w-full break-words whitespace-normal">
                     {formatDateTime(log.created_at)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
         <Pagination
           page={page}
           pageCount={pageCount}
