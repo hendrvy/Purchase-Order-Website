@@ -1,13 +1,41 @@
 import { Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { usePurchaseOrdersQuery } from '@/hooks/usePurchaseOrdersQuery.js'
 import { HistoryStatusFilter } from '@/components/history/HistoryStatusFilter.jsx'
 import { HistoryTable } from '@/components/history/HistoryTable.jsx'
+import { PO_STATUSES } from '@/types/po.js'
 
 export function HistoryOrderPage() {
   const { data: orders = [], isLoading, isError, error } = usePurchaseOrdersQuery()
-  const [statusFilter, setStatusFilter] = useState('all')
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // Lets the Dashboard's status chart deep-link here (e.g.
+  // /history?status=verifying) and pre-select the matching filter - see
+  // StatusDistributionChart.jsx. Falls back to 'all' for anything missing
+  // or not a real PO status, so a stale/malformed query param can't
+  // leave the table silently filtered to nothing.
+  const statusParam = searchParams.get('status')
+  const statusFilter = PO_STATUSES.includes(statusParam) ? statusParam : 'all'
   const [search, setSearch] = useState('')
+
+  // Keeps the ?status= query param in sync so the active filter survives
+  // a refresh/share, and so switching away from a chart-driven filter via
+  // the pill buttons below updates the URL too (replace, not push - this
+  // is a filter, not a new "page" worth of back-button history).
+  function handleStatusFilterChange(nextStatus) {
+    setSearchParams(
+      (params) => {
+        if (nextStatus === 'all') {
+          params.delete('status')
+        } else {
+          params.set('status', nextStatus)
+        }
+        return params
+      },
+      { replace: true },
+    )
+  }
 
   const filteredOrders = useMemo(() => {
     const byStatus =
@@ -35,7 +63,7 @@ export function HistoryOrderPage() {
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <HistoryStatusFilter value={statusFilter} onChange={setStatusFilter} />
+        <HistoryStatusFilter value={statusFilter} onChange={handleStatusFilterChange} />
 
         <div className="relative w-full sm:w-64">
           <Search size={16} className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400" />

@@ -1,4 +1,5 @@
 import { Bar, BarChart, CartesianGrid, Cell, XAxis, YAxis } from 'recharts'
+import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart.jsx'
 import { PO_STATUSES } from '@/types/po.js'
@@ -48,11 +49,20 @@ function buildChartData(orders) {
  * Bar chart showing how many purchase orders fall into each status
  * (draft, verification, processing, shipping, completed, rejected,
  * cancelled). Helps spot bottlenecks at a glance on the dashboard.
+ * Clicking a bar navigates to the History page pre-filtered to that
+ * status (see HistoryOrderPage.jsx, which reads the same `?status=`
+ * query param back out via useSearchParams).
  *
  * @param {{ orders: PurchaseOrder[] }} props
  */
 export function StatusDistributionChart({ orders }) {
+  const navigate = useNavigate()
   const { data, config } = buildChartData(orders)
+
+  function handleBarClick(entry) {
+    if (!entry?.status) return
+    navigate(`/history?status=${entry.status}`)
+  }
 
   return (
     <Card>
@@ -75,7 +85,10 @@ export function StatusDistributionChart({ orders }) {
             />
             <YAxis tickLine={false} axisLine={false} allowDecimals={false} width={28} />
             <ChartTooltip content={<ChartTooltipContent nameKey="status" />} />
-            <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+            {/* `cursor="pointer"` is recharts' prop for the bar's hover
+                cursor (not a CSS class) - without it the bar doesn't
+                visually hint that it's clickable. */}
+            <Bar dataKey="count" radius={[4, 4, 0, 0]} cursor="pointer" onClick={handleBarClick}>
               {data.map((entry) => (
                 <Cell key={entry.status} fill={`var(--color-status-${entry.status}-chart)`} />
               ))}
