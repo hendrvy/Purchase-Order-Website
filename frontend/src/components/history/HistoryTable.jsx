@@ -76,6 +76,17 @@ export function HistoryTable({ orders }) {
 
   return (
     <>
+      {sortedOrders.length > 0 && (
+        <Pagination
+          page={page}
+          pageCount={pageCount}
+          totalItems={totalItems}
+          pageSize={PAGE_SIZE}
+          onPageChange={setPage}
+          className="border-t-0 px-0"
+        />
+      )}
+
       {/* Mobile/tablet card list (< lg): below `lg` there isn't enough
           width for 7-8 fluid table columns to stay readable (see the
           <table> comment below - it's `w-full` with percentage-based
@@ -151,16 +162,6 @@ export function HistoryTable({ orders }) {
               </CardContent>
             </Card>
           ))
-        )}
-        {sortedOrders.length > 0 && (
-          <Pagination
-            page={page}
-            pageCount={pageCount}
-            totalItems={totalItems}
-            pageSize={PAGE_SIZE}
-            onPageChange={setPage}
-            className="border-t-0 px-0"
-          />
         )}
       </div>
 
@@ -298,13 +299,6 @@ export function HistoryTable({ orders }) {
                   ))}
                 </tbody>
               </table>
-              <Pagination
-                page={page}
-                pageCount={pageCount}
-                totalItems={totalItems}
-                pageSize={PAGE_SIZE}
-                onPageChange={setPage}
-              />
             </>
           )}
         </CardContent>

@@ -48,6 +48,15 @@ function ProfileChangeTableBody({ logs }) {
 
   return (
     <>
+      <Pagination
+        page={page}
+        pageCount={pageCount}
+        totalItems={totalItems}
+        pageSize={PAGE_SIZE}
+        onPageChange={setPage}
+        className="border-t-0 px-5 pt-0 md:px-5"
+      />
+
       {/* Mobile card list (< md) - see HistoryTable.jsx for the general
           rationale of swapping wide tables for stacked cards below md. */}
       <div className="flex flex-col gap-3 p-4 md:hidden">
@@ -72,14 +81,6 @@ function ProfileChangeTableBody({ logs }) {
             <p className="mt-2 text-xs text-gray-400">IP: {log.ip_address || '-'}</p>
           </div>
         ))}
-        <Pagination
-          page={page}
-          pageCount={pageCount}
-          totalItems={totalItems}
-          pageSize={PAGE_SIZE}
-          onPageChange={setPage}
-          className="border-t-0 px-0"
-        />
       </div>
 
       {/* Desktop table (>= md). table-fixed + percentage <colgroup> keeps
@@ -142,13 +143,6 @@ function ProfileChangeTableBody({ logs }) {
             ))}
           </tbody>
         </table>
-        <Pagination
-          page={page}
-          pageCount={pageCount}
-          totalItems={totalItems}
-          pageSize={PAGE_SIZE}
-          onPageChange={setPage}
-        />
       </div>
     </>
   )
@@ -177,6 +171,15 @@ function PasswordChangeTableBody({ logs }) {
 
   return (
     <>
+      <Pagination
+        page={page}
+        pageCount={pageCount}
+        totalItems={totalItems}
+        pageSize={PAGE_SIZE}
+        onPageChange={setPage}
+        className="border-t-0 px-5 pt-0 md:px-5"
+      />
+
       {/* Mobile card list (< md) - see HistoryTable.jsx for the general
           rationale of swapping wide tables for stacked cards below md. */}
       <div className="flex flex-col gap-3 p-4 md:hidden">
@@ -192,14 +195,6 @@ function PasswordChangeTableBody({ logs }) {
             <span className="text-xs text-gray-500">{formatDateTime(log.changed_at)}</span>
           </div>
         ))}
-        <Pagination
-          page={page}
-          pageCount={pageCount}
-          totalItems={totalItems}
-          pageSize={PAGE_SIZE}
-          onPageChange={setPage}
-          className="border-t-0 px-0"
-        />
       </div>
 
       {/* Desktop table (>= md). table-fixed + percentage <colgroup> keeps
@@ -241,13 +236,6 @@ function PasswordChangeTableBody({ logs }) {
             ))}
           </tbody>
         </table>
-        <Pagination
-          page={page}
-          pageCount={pageCount}
-          totalItems={totalItems}
-          pageSize={PAGE_SIZE}
-          onPageChange={setPage}
-        />
       </div>
     </>
   )
@@ -276,6 +264,15 @@ function DownloadLogTableBody({ logs }) {
 
   return (
     <>
+      <Pagination
+        page={page}
+        pageCount={pageCount}
+        totalItems={totalItems}
+        pageSize={PAGE_SIZE}
+        onPageChange={setPage}
+        className="border-t-0 px-5 pt-0 md:px-5"
+      />
+
       {/* Mobile card list (< md) - see HistoryTable.jsx for the general
           rationale of swapping wide tables for stacked cards below md. */}
       <div className="flex flex-col gap-3 p-4 md:hidden">
@@ -291,14 +288,6 @@ function DownloadLogTableBody({ logs }) {
             <p className="mt-1 text-xs text-gray-400">IP: {log.ip_address || '-'}</p>
           </div>
         ))}
-        <Pagination
-          page={page}
-          pageCount={pageCount}
-          totalItems={totalItems}
-          pageSize={PAGE_SIZE}
-          onPageChange={setPage}
-          className="border-t-0 px-0"
-        />
       </div>
 
       {/* Desktop table (>= md). table-fixed + percentage <colgroup> keeps
@@ -354,13 +343,6 @@ function DownloadLogTableBody({ logs }) {
             ))}
           </tbody>
         </table>
-        <Pagination
-          page={page}
-          pageCount={pageCount}
-          totalItems={totalItems}
-          pageSize={PAGE_SIZE}
-          onPageChange={setPage}
-        />
       </div>
     </>
   )

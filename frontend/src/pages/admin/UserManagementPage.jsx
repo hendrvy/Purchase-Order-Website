@@ -128,6 +128,17 @@ export function UserManagementPage() {
         </div>
       </div>
 
+      {!isLoading && !isError && companies.length > 0 && (
+        <Pagination
+          page={page}
+          pageCount={pageCount}
+          totalItems={totalItems}
+          pageSize={PAGE_SIZE}
+          onPageChange={setPage}
+          className="border-t-0 px-0"
+        />
+      )}
+
       {isLoading && <p className="text-sm text-gray-400">Memuat data user...</p>}
 
       {isError && (
@@ -239,16 +250,6 @@ export function UserManagementPage() {
                   </Card>
                 )
               })
-            )}
-            {companies.length > 0 && (
-              <Pagination
-                page={page}
-                pageCount={pageCount}
-                totalItems={totalItems}
-                pageSize={PAGE_SIZE}
-                onPageChange={setPage}
-                className="border-t-0 px-0"
-              />
             )}
           </div>
 
@@ -385,15 +386,6 @@ export function UserManagementPage() {
                     </tbody>
                   </table>
                 </div>
-              )}
-              {companies.length > 0 && (
-                <Pagination
-                  page={page}
-                  pageCount={pageCount}
-                  totalItems={totalItems}
-                  pageSize={PAGE_SIZE}
-                  onPageChange={setPage}
-                />
               )}
             </CardContent>
           </Card>
