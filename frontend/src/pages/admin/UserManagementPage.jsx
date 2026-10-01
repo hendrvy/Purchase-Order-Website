@@ -160,6 +160,11 @@ export function UserManagementPage() {
                       </div>
 
                       <div className="flex justify-between gap-3 text-xs">
+                        <span className="text-gray-400">ID</span>
+                        <span className="text-right text-gray-700">#{company.id}</span>
+                      </div>
+
+                      <div className="flex justify-between gap-3 text-xs">
                         <span className="text-gray-400">Email</span>
                         <span className="text-right break-words text-gray-700">
                           {company.email}
@@ -235,7 +240,7 @@ export function UserManagementPage() {
           <Card className="hidden py-0 md:block">
             <CardContent className="px-0">
               {companies.length === 0 ? (
-                <div className="w-[1360px] max-w-full px-5 py-6 text-center text-sm text-gray-400">
+                <div className="w-[1440px] max-w-full px-5 py-6 text-center text-sm text-gray-400">
                   Tidak ada user yang cocok dengan filter ini.
                 </div>
               ) : (
@@ -245,16 +250,18 @@ export function UserManagementPage() {
                       short: table-fixed + explicit <colgroup> widths keep
                       every column a consistent width regardless of which
                       row data happens to be visible (filter/search change,
-                      long names, etc.), and a fixed `w-[1360px]` (matching
+                      long names, etc.), and a fixed `w-[1440px]` (matching
                       the colgroup sum exactly, reused on the empty state
                       above) stops the table/Card from stretching to fill a
                       wider container or shrinking to fit a short "no
                       results" message. Perusahaan/Email wrap onto a second
                       line instead of truncating with '...' once they no
-                      longer fit; Username/Telepon/Terdaftar stay single-line
-                      since those values are always short in practice. */}
-                  <table className="w-[1360px] table-fixed text-left text-sm">
+                      longer fit; ID/Username/Telepon/Terdaftar stay
+                      single-line since those values are always short in
+                      practice. */}
+                  <table className="w-[1440px] table-fixed text-left text-sm">
                     <colgroup>
+                      <col className="w-20" />
                       <col className="w-40" />
                       <col className="w-64" />
                       <col className="w-72" />
@@ -265,6 +272,7 @@ export function UserManagementPage() {
                     </colgroup>
                     <thead>
                       <tr className="border-b border-gray-100 text-xs font-medium text-gray-500">
+                        <th className="px-5 py-3">ID</th>
                         <th className="px-5 py-3">Username</th>
                         <th className="px-5 py-3">Perusahaan</th>
                         <th className="px-5 py-3">Email</th>
@@ -284,6 +292,9 @@ export function UserManagementPage() {
 
                         return (
                           <tr key={company.id} className="align-top hover:bg-gray-50">
+                            <td className="overflow-hidden px-5 py-3 text-gray-500">
+                              <span className="block w-full min-w-0 truncate">#{company.id}</span>
+                            </td>
                             <td className="overflow-hidden px-5 py-3 font-medium text-gray-900">
                               <span className="block w-full min-w-0 truncate">
                                 {company.username}
