@@ -13,11 +13,10 @@ import { useUpdateCompanyRoleMutation } from '@/hooks/useUpdateCompanyRoleMutati
 import { usePagination } from '@/hooks/usePagination.js'
 import { AddAccountModal } from '@/components/admin/AddAccountModal.jsx'
 import { ResetPasswordModal } from '@/components/admin/ResetPasswordModal.jsx'
+import { RoleBadge } from '@/components/admin/RoleBadge.jsx'
+import { RoleUpdateControl } from '@/components/admin/RoleUpdateControl.jsx'
 
 const PAGE_SIZE = 10
-
-const selectClassName =
-  'rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm focus:border-[#D97745] focus:outline-none focus:ring-1 focus:ring-[#D97745] disabled:cursor-not-allowed disabled:opacity-50'
 
 /**
  * Admin-only page: lists every account (company) in the system with its
@@ -207,26 +206,17 @@ export function UserManagementPage() {
                       <div className="flex items-center justify-between gap-3 border-t border-gray-100 pt-2">
                         <span className="text-xs text-gray-400">Role</span>
                         {isSuperAdmin ? (
-                          <span
-                            className="inline-flex items-center rounded-[20px] border border-[#B00100] bg-red-50 px-3 py-1 text-xs font-medium text-[#B00100]"
+                          <RoleBadge
+                            role="super_admin"
                             title="Role Super Admin terkunci permanen, tidak bisa diubah siapapun"
-                          >
-                            {ROLE_LABELS.super_admin}
-                          </span>
+                          />
                         ) : (
-                          <select
-                            value={company.role}
+                          <RoleUpdateControl
+                            role={company.role}
                             disabled={isSelf || updateRoleMutation.isPending}
-                            onChange={(event) => handleRoleChange(company, event.target.value)}
-                            title={isSelf ? 'Tidak bisa mengubah role sendiri' : undefined}
-                            className={selectClassName}
-                          >
-                            {ASSIGNABLE_ROLES.map((role) => (
-                              <option key={role} value={role}>
-                                {ROLE_LABELS[role]}
-                              </option>
-                            ))}
-                          </select>
+                            disabledTitle={isSelf ? 'Tidak bisa mengubah role sendiri' : undefined}
+                            onSelect={(newRole) => handleRoleChange(company, newRole)}
+                          />
                         )}
                       </div>
 
@@ -349,26 +339,17 @@ export function UserManagementPage() {
                             </td>
                             <td className="px-5 py-3">
                               {isSuperAdmin ? (
-                                <span
-                                  className="inline-flex items-center rounded-[20px] border border-[#B00100] bg-red-50 px-3 py-1 text-xs font-medium text-[#B00100]"
+                                <RoleBadge
+                                  role="super_admin"
                                   title="Role Super Admin terkunci permanen, tidak bisa diubah siapapun"
-                                >
-                                  {ROLE_LABELS.super_admin}
-                                </span>
+                                />
                               ) : (
-                                <select
-                                  value={company.role}
+                                <RoleUpdateControl
+                                  role={company.role}
                                   disabled={isSelf || updateRoleMutation.isPending}
-                                  onChange={(event) => handleRoleChange(company, event.target.value)}
-                                  title={isSelf ? 'Tidak bisa mengubah role sendiri' : undefined}
-                                  className={selectClassName}
-                                >
-                                  {ASSIGNABLE_ROLES.map((role) => (
-                                    <option key={role} value={role}>
-                                      {ROLE_LABELS[role]}
-                                    </option>
-                                  ))}
-                                </select>
+                                  disabledTitle={isSelf ? 'Tidak bisa mengubah role sendiri' : undefined}
+                                  onSelect={(newRole) => handleRoleChange(company, newRole)}
+                                />
                               )}
                             </td>
                             <td className="overflow-hidden px-5 py-3 text-gray-500">
