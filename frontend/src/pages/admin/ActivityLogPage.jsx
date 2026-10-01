@@ -62,14 +62,18 @@ function ProfileChangeTableBody({ logs }) {
 
   return (
     <>
-      <Pagination
-        page={page}
-        pageCount={pageCount}
-        totalItems={totalItems}
-        pageSize={PAGE_SIZE}
-        onPageChange={setPage}
-        className="border-t-0 px-0"
-      />
+      <Card className="py-0">
+        <CardContent className="px-0">
+          <Pagination
+            page={page}
+            pageCount={pageCount}
+            totalItems={totalItems}
+            pageSize={PAGE_SIZE}
+            onPageChange={setPage}
+            className="border-t-0"
+          />
+        </CardContent>
+      </Card>
 
       <Card className="py-0">
         <CardContent className="px-0">
@@ -203,14 +207,18 @@ function PasswordChangeTableBody({ logs }) {
 
   return (
     <>
-      <Pagination
-        page={page}
-        pageCount={pageCount}
-        totalItems={totalItems}
-        pageSize={PAGE_SIZE}
-        onPageChange={setPage}
-        className="border-t-0 px-0"
-      />
+      <Card className="py-0">
+        <CardContent className="px-0">
+          <Pagination
+            page={page}
+            pageCount={pageCount}
+            totalItems={totalItems}
+            pageSize={PAGE_SIZE}
+            onPageChange={setPage}
+            className="border-t-0"
+          />
+        </CardContent>
+      </Card>
 
       <Card className="py-0">
         <CardContent className="px-0">
@@ -314,14 +322,18 @@ function DownloadLogTableBody({ logs }) {
 
   return (
     <>
-      <Pagination
-        page={page}
-        pageCount={pageCount}
-        totalItems={totalItems}
-        pageSize={PAGE_SIZE}
-        onPageChange={setPage}
-        className="border-t-0 px-0"
-      />
+      <Card className="py-0">
+        <CardContent className="px-0">
+          <Pagination
+            page={page}
+            pageCount={pageCount}
+            totalItems={totalItems}
+            pageSize={PAGE_SIZE}
+            onPageChange={setPage}
+            className="border-t-0"
+          />
+        </CardContent>
+      </Card>
 
       <Card className="py-0">
         <CardContent className="px-0">

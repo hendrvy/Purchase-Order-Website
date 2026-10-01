@@ -129,14 +129,18 @@ export function UserManagementPage() {
       </div>
 
       {!isLoading && !isError && companies.length > 0 && (
-        <Pagination
-          page={page}
-          pageCount={pageCount}
-          totalItems={totalItems}
-          pageSize={PAGE_SIZE}
-          onPageChange={setPage}
-          className="border-t-0 px-0"
-        />
+        <Card className="py-0">
+          <CardContent className="px-0">
+            <Pagination
+              page={page}
+              pageCount={pageCount}
+              totalItems={totalItems}
+              pageSize={PAGE_SIZE}
+              onPageChange={setPage}
+              className="border-t-0"
+            />
+          </CardContent>
+        </Card>
       )}
 
       {isLoading && <p className="text-sm text-gray-400">Memuat data user...</p>}
