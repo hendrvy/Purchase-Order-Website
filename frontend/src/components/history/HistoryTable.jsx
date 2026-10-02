@@ -323,7 +323,6 @@ export function HistoryTable({ orders }) {
             <>
               Batalkan PO{' '}
               <span className="font-medium text-gray-900">{pendingDelete.po_number}</span>?
-              Tindakan ini tidak dapat dibatalkan.
             </>
           }
           confirmLabel="Batalkan PO"
