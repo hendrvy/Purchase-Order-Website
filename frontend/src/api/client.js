@@ -47,7 +47,8 @@ apiClient.interceptors.response.use(
       const { status, data } = error.response
       const message = data?.message ?? data?.error ?? 'Terjadi kesalahan pada server.'
 
-      if (status === 401) {
+      const isPublicEndpoint = error.config?.url === '/api/login'
+      if (status === 401 && !isPublicEndpoint) {
         clearAuthStorage()
         window.location.href = '/login'
       }
