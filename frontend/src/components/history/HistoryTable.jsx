@@ -8,26 +8,15 @@ import { SortControl } from '@/components/ui/SortControl.jsx'
 import { formatCurrency, formatDate } from '@/lib/format.js'
 import { useAuth } from '@/context/AuthContext.jsx'
 import { useDeletePOMutation } from '@/hooks/useDeletePOMutation.js'
-import { usePagination } from '@/hooks/usePagination.js'
-import { useSort } from '@/hooks/useSort.js'
 import { POStatusUpdateControl } from '@/components/history/POStatusUpdateControl.jsx'
 import { AttachmentThumbnailList } from '@/components/history/AttachmentThumbnailList.jsx'
 import { AttachmentPreviewModal } from '@/components/history/AttachmentPreviewModal.jsx'
 import { isAdminLikeRole } from '@/types/role.js'
 
-const PAGE_SIZE = 10
-
 const SORT_OPTIONS = [
   { value: 'updated_at', label: 'Tanggal Diperbarui' },
   { value: 'company', label: 'Perusahaan' },
 ]
-
-// Defined at module scope so the reference stays stable across renders
-// (it's a dependency of the useSort memo - see hooks/useSort.js).
-const SORT_ACCESSORS = {
-  updated_at: (order) => new Date(order.updated_at).getTime(),
-  company: (order) => order.company?.company_name ?? '',
-}
 
 /**
  * @import { PurchaseOrder } from '@/types/po.js'
@@ -35,15 +24,32 @@ const SORT_ACCESSORS = {
  */
 
 /**
- * Table of purchase orders for the History page. Defaults to most recently
- * updated first, with client-side sort controls (date updated / company)
- * rendered alongside the pagination buttons. Includes the shipping resi
+ * Table of purchase orders for the History page. Filtering, sorting, and
+ * pagination all happen server-side (see HistoryOrderPage.jsx); this
+ * component is presentational - it renders the current page's `orders` and
+ * forwards the sort/page controls back up. Includes the shipping resi
  * number and clickable thumbnails for every attachment uploaded with the
  * order (opens a full preview modal on click).
  *
- * @param {{ orders: PurchaseOrder[] }} props
+ * @param {{
+ *   orders: PurchaseOrder[],
+ *   meta: import('@/types/api.js').PaginationMeta,
+ *   sort: string,
+ *   order: 'asc' | 'desc',
+ *   onSortChange: (field: string) => void,
+ *   onToggleOrder: () => void,
+ *   onPageChange: (page: number) => void,
+ * }} props
  */
-export function HistoryTable({ orders }) {
+export function HistoryTable({
+  orders,
+  meta,
+  sort,
+  order,
+  onSortChange,
+  onToggleOrder,
+  onPageChange,
+}) {
   const { user } = useAuth()
   /** @type {[Attachment | null, (a: Attachment | null) => void]} */
   const [previewAttachment, setPreviewAttachment] = useState(null)
@@ -55,17 +61,6 @@ export function HistoryTable({ orders }) {
   // (a plain `user` only ever sees their own), so the "Perusahaan" column
   // is only useful - and only populated by the backend - for those roles.
   const showCompanyColumn = user?.role === 'validator' || isAdminLikeRole(user?.role)
-
-  const { field, direction, setField, toggleDirection, sortedItems: sortedOrders } = useSort(
-    orders,
-    SORT_ACCESSORS,
-    { initialField: 'updated_at', initialDirection: 'desc' },
-  )
-
-  const { page, pageCount, pageItems, totalItems, setPage } = usePagination(
-    sortedOrders,
-    PAGE_SIZE,
-  )
 
   // A `user` can only cancel their own PO while it's still 'verifying' -
   // once a validator/admin has started processing it, the user can no
@@ -93,22 +88,22 @@ export function HistoryTable({ orders }) {
 
   return (
     <>
-      {sortedOrders.length > 0 && (
+      {meta.total > 0 && (
         <Card className="py-0">
           <CardContent className="px-0">
             <Pagination
-              page={page}
-              pageCount={pageCount}
-              totalItems={totalItems}
-              pageSize={PAGE_SIZE}
-              onPageChange={setPage}
+              page={meta.page}
+              pageCount={meta.total_pages}
+              totalItems={meta.total}
+              pageSize={meta.page_size}
+              onPageChange={onPageChange}
               className="border-t-0"
               sortControl={
                 <SortControl
-                  value={field}
-                  onChange={setField}
-                  direction={direction}
-                  onToggleDirection={toggleDirection}
+                  value={sort}
+                  onChange={onSortChange}
+                  direction={order}
+                  onToggleDirection={onToggleOrder}
                   options={SORT_OPTIONS}
                 />
               }
@@ -126,14 +121,14 @@ export function HistoryTable({ orders }) {
           stacked list of cards - one per order - instead. Hidden from
           `lg` up via `lg:hidden`. */}
       <div className="flex flex-col gap-3 lg:hidden">
-        {sortedOrders.length === 0 ? (
+          {orders.length === 0 ? (
           <Card>
             <CardContent className="px-5 py-6 text-center text-sm text-gray-400">
               Belum ada purchase order dengan status ini.
             </CardContent>
           </Card>
         ) : (
-          pageItems.map((order) => (
+          orders.map((order) => (
             <Card key={order.id} className="py-0">
               <CardContent className="flex flex-col gap-3 px-4 py-4">
                 <div className="flex items-start justify-between gap-3">
@@ -198,7 +193,7 @@ export function HistoryTable({ orders }) {
       {/* Desktop table (>= lg). */}
       <Card className="hidden py-0 lg:block">
         <CardContent className="px-0">
-          {sortedOrders.length === 0 ? (
+        {orders.length === 0 ? (
             <div className="w-full px-5 py-6 text-center text-sm text-gray-400">
               Belum ada purchase order dengan status ini.
             </div>
@@ -249,7 +244,7 @@ export function HistoryTable({ orders }) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {pageItems.map((order) => (
+                  {orders.map((order) => (
                     <tr key={order.id} className="align-top hover:bg-gray-50">
                       {/* No. PO wraps onto a second line instead of being
                           truncated - long PO numbers used to get cut off

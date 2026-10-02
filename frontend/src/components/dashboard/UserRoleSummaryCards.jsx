@@ -2,10 +2,6 @@ import { ShieldCheck, User, UserCheck, Users } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card.jsx'
 import { ASSIGNABLE_ROLES, ROLE_LABELS } from '@/types/role.js'
 
-/**
- * @import { User as UserType } from '@/types/user.js'
- */
-
 /** Icon + color tint per card, keyed by item label. `super_admin` is
  * intentionally excluded (via ASSIGNABLE_ROLES below) - it's a hidden,
  * DB-only role that should never surface as its own dashboard stat, same
@@ -20,16 +16,19 @@ const ICON_STYLES = {
 /**
  * Admin-only dashboard summary: total accounts per role. Shown alongside
  * the regular PO SummaryCards on DashboardPage when the logged-in user is
- * an admin.
+ * an admin. Counts are computed server-side (see GetDashboardSummaryDB) so
+ * the dashboard doesn't have to list every account to count them.
  *
- * @param {{ companies: UserType[] }} props
+ * @param {{ summary: { total: number, by_role: Record<string, number> } }} props
  */
-export function UserRoleSummaryCards({ companies }) {
+export function UserRoleSummaryCards({ summary }) {
+  const byRole = summary.by_role ?? {}
+
   const items = [
-    { label: 'Total Akun', value: companies.length },
+    { label: 'Total Akun', value: summary.total },
     ...ASSIGNABLE_ROLES.map((role) => ({
       label: ROLE_LABELS[role],
-      value: companies.filter((company) => company.role === role).length,
+      value: byRole[role] ?? 0,
     })),
   ]
 

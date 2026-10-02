@@ -33,13 +33,14 @@ function getPageRange(page, pageCount, siblingCount) {
 }
 
 /**
- * Pagination controls for tables that slice a client-side list (see
- * hooks/usePagination.js). Shows "Menampilkan X-Y dari Z" alongside
- * prev/next + numbered page buttons. Renders nothing when there's only
- * one page AND no `sortControl` is provided, since the controls would be
- * pointless with nothing to paginate to - but when a `sortControl` is
- * passed (see components/ui/SortControl.jsx), it still renders so the
- * sort dropdown stays usable even for a single page of results.
+ * Pagination controls for server-paginated tables (the API returns a
+ * `{ items, meta }` envelope, see backend/api/pagination.go). Shows
+ * "Menampilkan X-Y dari Z" alongside prev/next + numbered page buttons.
+ * Renders nothing when there's only one page AND no `sortControl` is
+ * provided, since the controls would be pointless with nothing to paginate
+ * to - but when a `sortControl` is passed (see components/ui/SortControl.jsx),
+ * it still renders so the sort dropdown stays usable even for a single page
+ * of results.
  *
  * @param {{
  *   page: number,

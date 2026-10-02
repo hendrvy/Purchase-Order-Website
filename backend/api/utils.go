@@ -142,6 +142,20 @@ func GenerateUniqueFilename(originalFilename string) string {
 // PO FIELD VALIDATION
 // ============================================================================
 
+// ValidPOStatuses - The canonical purchase order status vocabulary,
+// mirroring the DB CHECK constraint in backend/db/schema.sql.
+var ValidPOStatuses = []string{"verifying", "process", "shipping", "complete", "rejected"}
+
+// IsValidPOStatus - Check that a status string is one of ValidPOStatuses.
+func IsValidPOStatus(status string) bool {
+	for _, s := range ValidPOStatuses {
+		if status == s {
+			return true
+		}
+	}
+	return false
+}
+
 // ValidatePOFields - Validate purchase order fields
 func ValidatePOFields(poNumber string, status string) error {
 	// Check po_number
@@ -150,18 +164,8 @@ func ValidatePOFields(poNumber string, status string) error {
 	}
 
 	// Check status (if provided)
-	if status != "" {
-		validStatuses := []string{"verifying", "process", "shipping", "complete", "rejected"}
-		isValid := false
-		for _, s := range validStatuses {
-			if status == s {
-				isValid = true
-				break
-			}
-		}
-		if !isValid {
-			return fmt.Errorf("invalid status '%s'. Allowed values: verifying, process, shipping, complete, rejected", status)
-		}
+	if status != "" && !IsValidPOStatus(status) {
+		return fmt.Errorf("invalid status '%s'. Allowed values: verifying, process, shipping, complete, rejected", status)
 	}
 
 	return nil

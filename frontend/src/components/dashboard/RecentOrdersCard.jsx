@@ -1,60 +1,36 @@
 import { ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx'
-import { SortControl } from '@/components/ui/SortControl.jsx'
 import { POStatusBadge } from '@/components/history/POStatusBadge.jsx'
 import { formatCurrency, formatRelativeTime } from '@/lib/format.js'
-import { useSort } from '@/hooks/useSort.js'
 
 /**
  * @import { PurchaseOrder } from '@/types/po.js'
  */
 
-const SORT_OPTIONS = [
-  { value: 'updated_at', label: 'Tanggal Diperbarui' },
-  { value: 'company', label: 'Perusahaan' },
-]
-
-// Defined at module scope so the reference stays stable across renders
-// (it's a dependency of the useSort memo - see hooks/useSort.js).
-const SORT_ACCESSORS = {
-  updated_at: (order) => new Date(order.updated_at).getTime(),
-  company: (order) => order.company?.company_name ?? '',
-}
-
 /**
+ * Newest-first list of the most recently updated purchase orders. The order
+ * comes from the server (see GetDashboardSummaryDB in
+ * backend/api/database.go), so there is no sort control here - sorting a
+ * five-row preview client-side would be misleading anyway.
+ *
  * @param {{ orders: PurchaseOrder[], limit?: number }} props
  */
 export function RecentOrdersCard({ orders, limit = 5 }) {
-  const { field, direction, setField, toggleDirection, sortedItems } = useSort(
-    orders,
-    SORT_ACCESSORS,
-    { initialField: 'updated_at', initialDirection: 'desc' },
-  )
-
-  const recentOrders = sortedItems.slice(0, limit)
+  const recentOrders = orders.slice(0, limit)
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Recent Orders</CardTitle>
         <CardAction>
-          <div className="flex flex-wrap items-center justify-end gap-3">
-            <SortControl
-              value={field}
-              onChange={setField}
-              direction={direction}
-              onToggleDirection={toggleDirection}
-              options={SORT_OPTIONS}
-            />
-            <Link
-              to="/history"
-              className="flex items-center gap-1 text-sm font-medium text-[#B00100] hover:underline"
-            >
-              View All
-              <ArrowRight size={14} />
-            </Link>
-          </div>
+          <Link
+            to="/history"
+            className="flex items-center gap-1 text-sm font-medium text-[#B00100] hover:underline"
+          >
+            View All
+            <ArrowRight size={14} />
+          </Link>
         </CardAction>
       </CardHeader>
       <CardContent>

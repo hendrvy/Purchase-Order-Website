@@ -18,6 +18,7 @@ export function useCreatePOMutation() {
     mutationFn: (input) => createPurchaseOrder(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-orders'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] })
     },
   })
 }

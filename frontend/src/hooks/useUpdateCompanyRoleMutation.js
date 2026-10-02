@@ -17,6 +17,7 @@ export function useUpdateCompanyRoleMutation() {
     mutationFn: ({ id, role }) => updateCompanyRole(id, role),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['companies'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] })
     },
   })
 }

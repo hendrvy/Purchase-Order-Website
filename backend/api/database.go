@@ -2,7 +2,52 @@ package api
 
 import (
 	"fmt"
+
+	"gorm.io/gorm"
 )
+
+// ============================================================================
+// SORT ALLOW-LISTS
+//
+// These map the frontend's ?sort= keys to safe, qualified SQL columns. They
+// are the only values parseSort (see pagination.go) will ever place into an
+// ORDER BY clause, so raw request input never reaches SQL.
+// ============================================================================
+
+// PurchaseOrderSortColumns - ?sort= allow-list for purchase order queries.
+// The `company` key relies on the LEFT JOIN alias `c` used by
+// GetPurchaseOrdersDB.
+var PurchaseOrderSortColumns = map[string]string{
+	"updated_at":   "purchase_orders.updated_at",
+	"created_at":   "purchase_orders.created_at",
+	"company":      "c.company_name",
+	"status":       "purchase_orders.status",
+	"total_amount": "purchase_orders.total_amount",
+	"po_number":    "purchase_orders.po_number",
+}
+
+// CompanySortColumns - ?sort= allow-list for GET /api/companies.
+var CompanySortColumns = map[string]string{
+	"created_at":   "created_at",
+	"username":     "username",
+	"company_name": "company_name",
+	"email":        "email",
+	"role":         "role",
+}
+
+// ChangeLogSortColumns - ?sort= allow-list for the profile/password change
+// audit tables (both have a changed_at column).
+var ChangeLogSortColumns = map[string]string{
+	"changed_at": "changed_at",
+	"user_id":    "user_id",
+}
+
+// DownloadLogSortColumns - ?sort= allow-list for the download audit table,
+// which tracks created_at rather than changed_at.
+var DownloadLogSortColumns = map[string]string{
+	"created_at": "created_at",
+	"user_id":    "user_id",
+}
 
 // stripPurchaseOrdersCompanyPassword - Clear the hashed password off each
 // preloaded PurchaseOrder.Company before returning to a handler, since
@@ -16,19 +61,64 @@ func stripPurchaseOrdersCompanyPassword(purchaseOrders []PurchaseOrder) {
 	}
 }
 
-// GetAllPurchaseOrdersDB - Get all purchase orders from database
-func GetAllPurchaseOrdersDB(page int, limit int) ([]PurchaseOrder, error) {
-	var purchaseOrder []PurchaseOrder
+// buildPurchaseOrdersQuery - Shared filter builder for purchase order lists
+// (used by both the count and the page query so they can never drift). The
+// companies join is always present so `?sort=company` and a company-name
+// search are always available; it's a many-to-one join on the primary key so
+// it never multiplies rows.
+func buildPurchaseOrdersQuery(companyID *uint, status, search string) *gorm.DB {
+	query := DB.Model(&PurchaseOrder{}).
+		Joins("LEFT JOIN companies AS c ON c.id = purchase_orders.company_id").
+		Where("purchase_orders.deleted_at IS NULL")
 
-	result := DB.Preload("Attachments").Preload("Company").Where("deleted_at IS NULL").Offset((page - 1) * limit).Limit(limit).Find(&purchaseOrder)
-
-	if result.Error != nil {
-		return nil, result.Error
+	if companyID != nil {
+		query = query.Where("purchase_orders.company_id = ?", *companyID)
 	}
 
-	stripPurchaseOrdersCompanyPassword(purchaseOrder)
+	if status != "" {
+		query = query.Where("purchase_orders.status = ?", status)
+	}
 
-	return purchaseOrder, nil
+	if search != "" {
+		like := "%" + search + "%"
+		query = query.Where(
+			"purchase_orders.po_number ILIKE ? OR purchase_orders.title ILIKE ? OR purchase_orders.resi_number ILIKE ? OR c.company_name ILIKE ?",
+			like, like, like, like,
+		)
+	}
+
+	return query
+}
+
+// GetPurchaseOrdersDB - Paginated, sorted, optionally-filtered purchase
+// orders. When companyID is non-nil the results are scoped to that company
+// (the `user` role); otherwise every company's POs are returned (validator/
+// admin). Returns the page slice plus the total row count so handlers can
+// build pagination metadata.
+func GetPurchaseOrdersDB(companyID *uint, page, limit int, sortColumn, direction, status, search string) ([]PurchaseOrder, int64, error) {
+	var purchaseOrders []PurchaseOrder
+	var total int64
+
+	if err := buildPurchaseOrdersQuery(companyID, status, search).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	result := buildPurchaseOrdersQuery(companyID, status, search).
+		Select("purchase_orders.*").
+		Order(sortColumn + " " + direction).
+		Offset((page - 1) * limit).
+		Limit(limit).
+		Preload("Attachments").
+		Preload("Company").
+		Find(&purchaseOrders)
+
+	if result.Error != nil {
+		return nil, 0, result.Error
+	}
+
+	stripPurchaseOrdersCompanyPassword(purchaseOrders)
+
+	return purchaseOrders, total, nil
 }
 
 // GetPurchaseOrderByIDDB - Get purchase order by ID from database
@@ -98,22 +188,6 @@ func DeletePurchaseOrderDB(id uint) error {
 	}
 
 	return nil
-}
-
-// GetPurchaseOrdersByCompanyDB - Get all purchase orders for a company
-func GetPurchaseOrdersByCompanyDB(companyID uint) ([]PurchaseOrder, error) {
-	fmt.Printf("Getting purchase orders for company ID: %d\n", companyID)
-
-	var poByCompany []PurchaseOrder
-	result := DB.Preload("Attachments").Preload("Company").Where("company_id = ? AND deleted_at IS NULL", companyID).Find(&poByCompany)
-
-	if result.Error != nil {
-		return nil, result.Error
-	}
-
-	stripPurchaseOrdersCompanyPassword(poByCompany)
-
-	return poByCompany, nil
 }
 
 // ============================================================================
@@ -235,10 +309,9 @@ func UpdateCompanyDB(id uint, company *Company) error {
 	return nil
 }
 
-// GetAllCompaniesDB - Get all companies (users), optionally filtered by
-// role and/or a case-insensitive search across username/company_name/email.
-func GetAllCompaniesDB(role string, search string) ([]Company, error) {
-	var companies []Company
+// buildCompaniesQuery - Shared filter builder for company lists (used by
+// both the count and the page query).
+func buildCompaniesQuery(role, search string) *gorm.DB {
 	query := DB.Model(&Company{})
 
 	if role != "" {
@@ -250,12 +323,31 @@ func GetAllCompaniesDB(role string, search string) ([]Company, error) {
 		query = query.Where("username ILIKE ? OR company_name ILIKE ? OR email ILIKE ?", like, like, like)
 	}
 
-	result := query.Order("created_at DESC").Find(&companies)
-	if result.Error != nil {
-		return nil, result.Error
+	return query
+}
+
+// GetAllCompaniesDB - Get all companies (users), optionally filtered by
+// role and/or a case-insensitive search across username/company_name/email,
+// paginated and sorted. Returns the page slice plus the total row count.
+func GetAllCompaniesDB(role string, search string, page, limit int, sortColumn, direction string) ([]Company, int64, error) {
+	var companies []Company
+	var total int64
+
+	if err := buildCompaniesQuery(role, search).Count(&total).Error; err != nil {
+		return nil, 0, err
 	}
 
-	return companies, nil
+	result := buildCompaniesQuery(role, search).
+		Order(sortColumn + " " + direction).
+		Offset((page - 1) * limit).
+		Limit(limit).
+		Find(&companies)
+
+	if result.Error != nil {
+		return nil, 0, result.Error
+	}
+
+	return companies, total, nil
 }
 
 // UpdateCompanyRoleDB - Update just the role of a company
@@ -417,33 +509,159 @@ func CreateProfileChangeLog(log *ProfileChange) error {
 // AUDIT LOG QUERY HELPERS (admin activity log page)
 // ============================================================================
 
-// GetAllProfileChangesDB - List profile change audit entries, most recent first
-func GetAllProfileChangesDB(limit int) ([]ProfileChange, error) {
+// getAuditLogsDB - Shared paginated/sorted query for the read-only audit
+// tables. `model` is the GORM model to query and `out` the destination
+// slice. Returns the total row count for pagination metadata.
+func getAuditLogsDB(model, out interface{}, page, limit int, sortColumn, direction string) (int64, error) {
+	var total int64
+
+	if err := DB.Model(model).Count(&total).Error; err != nil {
+		return 0, err
+	}
+
+	result := DB.Model(model).
+		Order(sortColumn + " " + direction).
+		Offset((page - 1) * limit).
+		Limit(limit).
+		Find(out)
+
+	if result.Error != nil {
+		return 0, result.Error
+	}
+
+	return total, nil
+}
+
+// GetProfileChangesDB - Paginated, sorted profile change audit entries.
+func GetProfileChangesDB(page, limit int, sortColumn, direction string) ([]ProfileChange, int64, error) {
 	var logs []ProfileChange
-	result := DB.Order("changed_at DESC").Limit(limit).Find(&logs)
-	if result.Error != nil {
-		return nil, result.Error
+	total, err := getAuditLogsDB(&ProfileChange{}, &logs, page, limit, sortColumn, direction)
+	if err != nil {
+		return nil, 0, err
 	}
-	return logs, nil
+	return logs, total, nil
 }
 
-// GetAllPasswordChangesDB - List password change audit entries, most recent first
-func GetAllPasswordChangesDB(limit int) ([]PasswordChange, error) {
+// GetPasswordChangesDB - Paginated, sorted password change audit entries.
+func GetPasswordChangesDB(page, limit int, sortColumn, direction string) ([]PasswordChange, int64, error) {
 	var logs []PasswordChange
-	result := DB.Order("changed_at DESC").Limit(limit).Find(&logs)
-	if result.Error != nil {
-		return nil, result.Error
+	total, err := getAuditLogsDB(&PasswordChange{}, &logs, page, limit, sortColumn, direction)
+	if err != nil {
+		return nil, 0, err
 	}
-	return logs, nil
+	return logs, total, nil
 }
 
-// GetAllDownloadLogsDB - List file download audit entries, most recent first
-func GetAllDownloadLogsDB(limit int) ([]DownloadLog, error) {
+// GetDownloadLogsDB - Paginated, sorted file download audit entries.
+func GetDownloadLogsDB(page, limit int, sortColumn, direction string) ([]DownloadLog, int64, error) {
 	var logs []DownloadLog
-	result := DB.Order("created_at DESC").Limit(limit).Find(&logs)
-	if result.Error != nil {
-		return nil, result.Error
+	total, err := getAuditLogsDB(&DownloadLog{}, &logs, page, limit, sortColumn, direction)
+	if err != nil {
+		return nil, 0, err
 	}
-	return logs, nil
+	return logs, total, nil
+}
+
+// ============================================================================
+// DASHBOARD SUMMARY
+// ============================================================================
+
+// POSummary - aggregate purchase order figures for the dashboard.
+type POSummary struct {
+	Total              int64            `json:"total"`
+	CountsByStatus     map[string]int64 `json:"counts_by_status"`
+	CompletedThisMonth int64            `json:"completed_this_month"`
+	RecentOrders       []PurchaseOrder  `json:"recent_orders"`
+}
+
+// AccountSummary - aggregate account figures for the dashboard (admin only).
+type AccountSummary struct {
+	Total  int64            `json:"total"`
+	ByRole map[string]int64 `json:"by_role"`
+}
+
+// DashboardSummary - single payload backing every dashboard widget, so the
+// dashboard no longer needs to fetch full PO/company lists just to count
+// them. `Accounts` is nil for non-admins.
+type DashboardSummary struct {
+	PurchaseOrders POSummary       `json:"purchase_orders"`
+	Accounts       *AccountSummary `json:"accounts,omitempty"`
+}
+
+// GetDashboardSummaryDB - Compute the dashboard aggregates. When companyID
+// is non-nil the PO figures are scoped to that company (the `user` role);
+// includeAccounts adds per-role account counts for admins.
+func GetDashboardSummaryDB(companyID *uint, includeAccounts bool) (*DashboardSummary, error) {
+	summary := &DashboardSummary{
+		PurchaseOrders: POSummary{CountsByStatus: map[string]int64{}},
+	}
+
+	// Total + per-status counts in a single grouped query. The sum of the
+	// group counts is the overall total.
+	type statusCount struct {
+		Status string
+		Total  int64
+	}
+	var statusRows []statusCount
+	statusQuery := DB.Model(&PurchaseOrder{}).
+		Select("status, count(*) AS total").
+		Group("status")
+	if companyID != nil {
+		statusQuery = statusQuery.Where("company_id = ?", *companyID)
+	}
+	if err := statusQuery.Scan(&statusRows).Error; err != nil {
+		return nil, err
+	}
+	for _, row := range statusRows {
+		summary.PurchaseOrders.CountsByStatus[row.Status] = row.Total
+		summary.PurchaseOrders.Total += row.Total
+	}
+
+	// POs marked complete during the current calendar month. date_trunc is
+	// Postgres-specific, which is fine - this app is Postgres-only (see
+	// backend/db/schema.sql).
+	completedQuery := DB.Model(&PurchaseOrder{}).
+		Where("status = ?", "complete").
+		Where("updated_at >= date_trunc('month', CURRENT_TIMESTAMP)")
+	if companyID != nil {
+		completedQuery = completedQuery.Where("company_id = ?", *companyID)
+	}
+	if err := completedQuery.Count(&summary.PurchaseOrders.CompletedThisMonth).Error; err != nil {
+		return nil, err
+	}
+
+	// Five most recently updated POs for the "Recent Orders" card. No
+	// company preload - the card doesn't display it.
+	recentQuery := DB.Model(&PurchaseOrder{}).Order("updated_at DESC").Limit(5)
+	if companyID != nil {
+		recentQuery = recentQuery.Where("company_id = ?", *companyID)
+	}
+	if err := recentQuery.Find(&summary.PurchaseOrders.RecentOrders).Error; err != nil {
+		return nil, err
+	}
+
+	if includeAccounts {
+		accounts := &AccountSummary{ByRole: map[string]int64{}}
+
+		type roleCount struct {
+			Role  Roles
+			Total int64
+		}
+		var roleRows []roleCount
+		if err := DB.Model(&Company{}).
+			Select("role, count(*) AS total").
+			Group("role").
+			Scan(&roleRows).Error; err != nil {
+			return nil, err
+		}
+		for _, row := range roleRows {
+			accounts.ByRole[string(row.Role)] = row.Total
+			accounts.Total += row.Total
+		}
+
+		summary.Accounts = accounts
+	}
+
+	return summary, nil
 }
 

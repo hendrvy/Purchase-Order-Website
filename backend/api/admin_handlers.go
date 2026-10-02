@@ -16,8 +16,9 @@ import (
 // access to user management, only to PO status updates.
 // ============================================================================
 
-// AdminListCompanies - List all companies/users, optionally filtered by
-// role (?role=user|validator|admin) and/or search (?search=...).
+// AdminListCompanies - List all companies/users (paginated + sorted),
+// optionally filtered by role (?role=user|validator|admin) and/or search
+// (?search=...). Supports ?sort=/?order= (whitelisted in database.go).
 func AdminListCompanies(c *gin.Context) {
 	role := c.Query("role")
 	search := strings.TrimSpace(c.Query("search"))
@@ -31,7 +32,19 @@ func AdminListCompanies(c *gin.Context) {
 		return
 	}
 
-	companies, err := GetAllCompaniesDB(role, search)
+	page, limit := parsePagination(c)
+
+	sortColumn, direction, err := parseSort(c, CompanySortColumns, "created_at", "desc")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, JsonResponse{
+			Status:  http.StatusBadRequest,
+			Message: "Invalid sort parameters",
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	companies, total, err := GetAllCompaniesDB(role, search, page, limit, sortColumn, direction)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, JsonResponse{
 			Status:  http.StatusInternalServerError,
@@ -48,7 +61,10 @@ func AdminListCompanies(c *gin.Context) {
 	c.JSON(http.StatusOK, JsonResponse{
 		Status:  http.StatusOK,
 		Message: "Retrieved companies",
-		Data:    companies,
+		Data: PaginatedData{
+			Items: companies,
+			Meta:  buildMeta(page, limit, total),
+		},
 	})
 }
 
@@ -381,10 +397,22 @@ func AdminResetCompanyPassword(c *gin.Context) {
 // ADMIN ACTIVITY LOG (AUDIT) ENDPOINTS
 // ============================================================================
 
-// AdminGetProfileChangeLogs - List profile change audit entries
+// AdminGetProfileChangeLogs - List profile change audit entries (paginated
+// + sorted).
 func AdminGetProfileChangeLogs(c *gin.Context) {
-	limit := queryInt(c, "limit", 100)
-	logs, err := GetAllProfileChangesDB(limit)
+	page, limit := parsePagination(c)
+
+	sortColumn, direction, err := parseSort(c, ChangeLogSortColumns, "changed_at", "desc")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, JsonResponse{
+			Status:  http.StatusBadRequest,
+			Message: "Invalid sort parameters",
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	logs, total, err := GetProfileChangesDB(page, limit, sortColumn, direction)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, JsonResponse{
 			Status:  http.StatusInternalServerError,
@@ -396,14 +424,29 @@ func AdminGetProfileChangeLogs(c *gin.Context) {
 	c.JSON(http.StatusOK, JsonResponse{
 		Status:  http.StatusOK,
 		Message: "Retrieved profile change logs",
-		Data:    logs,
+		Data: PaginatedData{
+			Items: logs,
+			Meta:  buildMeta(page, limit, total),
+		},
 	})
 }
 
-// AdminGetPasswordChangeLogs - List password change audit entries
+// AdminGetPasswordChangeLogs - List password change audit entries (paginated
+// + sorted).
 func AdminGetPasswordChangeLogs(c *gin.Context) {
-	limit := queryInt(c, "limit", 100)
-	logs, err := GetAllPasswordChangesDB(limit)
+	page, limit := parsePagination(c)
+
+	sortColumn, direction, err := parseSort(c, ChangeLogSortColumns, "changed_at", "desc")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, JsonResponse{
+			Status:  http.StatusBadRequest,
+			Message: "Invalid sort parameters",
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	logs, total, err := GetPasswordChangesDB(page, limit, sortColumn, direction)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, JsonResponse{
 			Status:  http.StatusInternalServerError,
@@ -415,14 +458,29 @@ func AdminGetPasswordChangeLogs(c *gin.Context) {
 	c.JSON(http.StatusOK, JsonResponse{
 		Status:  http.StatusOK,
 		Message: "Retrieved password change logs",
-		Data:    logs,
+		Data: PaginatedData{
+			Items: logs,
+			Meta:  buildMeta(page, limit, total),
+		},
 	})
 }
 
-// AdminGetDownloadLogs - List file download audit entries
+// AdminGetDownloadLogs - List file download audit entries (paginated +
+// sorted).
 func AdminGetDownloadLogs(c *gin.Context) {
-	limit := queryInt(c, "limit", 100)
-	logs, err := GetAllDownloadLogsDB(limit)
+	page, limit := parsePagination(c)
+
+	sortColumn, direction, err := parseSort(c, DownloadLogSortColumns, "created_at", "desc")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, JsonResponse{
+			Status:  http.StatusBadRequest,
+			Message: "Invalid sort parameters",
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	logs, total, err := GetDownloadLogsDB(page, limit, sortColumn, direction)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, JsonResponse{
 			Status:  http.StatusInternalServerError,
@@ -434,6 +492,9 @@ func AdminGetDownloadLogs(c *gin.Context) {
 	c.JSON(http.StatusOK, JsonResponse{
 		Status:  http.StatusOK,
 		Message: "Retrieved download logs",
-		Data:    logs,
+		Data: PaginatedData{
+			Items: logs,
+			Meta:  buildMeta(page, limit, total),
+		},
 	})
 }

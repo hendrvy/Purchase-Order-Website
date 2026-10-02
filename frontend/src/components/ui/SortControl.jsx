@@ -4,9 +4,9 @@ import { cn } from '@/lib/utils.js'
 /**
  * Controlled sort UI: a dropdown to pick the field to sort by plus a
  * separate toggle button that flips between ascending and descending.
- * Purely presentational - the actual sorting happens in the caller (see
- * hooks/useSort.js), which is where the current `field`/`direction` state
- * and the accessor for each option live.
+ * Purely presentational - the caller owns the `value`/`direction` state and
+ * sends them to the server (see hooks/useServerSort.js), which does the
+ * actual sorting.
  *
  * @param {{
  *   value: string,

@@ -1,10 +1,10 @@
 import { useState } from 'react'
+import { EMPTY_PAGINATION_META } from '@/api/client.js'
 import { Card, CardContent } from '@/components/ui/card.jsx'
 import { Pagination } from '@/components/ui/Pagination.jsx'
 import { SortControl } from '@/components/ui/SortControl.jsx'
 import { formatDateTime } from '@/lib/format.js'
-import { usePagination } from '@/hooks/usePagination.js'
-import { useSort } from '@/hooks/useSort.js'
+import { useServerSort } from '@/hooks/useServerSort.js'
 import {
   useDownloadLogsQuery,
   usePasswordChangeLogsQuery,
@@ -23,18 +23,6 @@ const DOWNLOAD_LOG_SORT_OPTIONS = [
   { value: 'user_id', label: 'User' },
 ]
 
-// Defined at module scope so the references stay stable across renders
-// (they're dependencies of the useSort memo - see hooks/useSort.js).
-const CHANGE_LOG_SORT_ACCESSORS = {
-  changed_at: (log) => new Date(log.changed_at).getTime(),
-  user_id: (log) => log.user_id,
-}
-
-const DOWNLOAD_LOG_SORT_ACCESSORS = {
-  created_at: (log) => new Date(log.created_at).getTime(),
-  user_id: (log) => log.user_id,
-}
-
 const TABS = [
   { key: 'profile', label: 'Perubahan Profil' },
   { key: 'password', label: 'Perubahan Password' },
@@ -50,7 +38,30 @@ const FIELD_LABELS = {
 }
 
 function ProfileChangeTable() {
-  const { data: logs = [], isLoading, isError, error } = useProfileChangeLogsQuery()
+  const [page, setPage] = useState(1)
+  const { sort, order, setSort, toggleOrder } = useServerSort('changed_at', 'desc')
+
+  // Changing the sort invalidates the current page offset - reset in the
+  // handlers rather than an effect so it happens in the same render.
+  function handleSortChange(field) {
+    setSort(field)
+    setPage(1)
+  }
+
+  function handleToggleOrder() {
+    toggleOrder()
+    setPage(1)
+  }
+
+  const { data, isLoading, isError, error } = useProfileChangeLogsQuery({
+    page,
+    limit: PAGE_SIZE,
+    sort,
+    order,
+  })
+
+  const logs = data?.items ?? []
+  const meta = data?.meta ?? { ...EMPTY_PAGINATION_META, page_size: PAGE_SIZE }
 
   if (isLoading) {
     return (
@@ -68,7 +79,7 @@ function ProfileChangeTable() {
       </Card>
     )
   }
-  if (logs.length === 0) {
+  if (meta.total === 0) {
     return (
       <Card className="py-0">
         <CardContent className="px-5 py-6 text-center text-sm text-gray-400">
@@ -78,34 +89,45 @@ function ProfileChangeTable() {
     )
   }
 
-  return <ProfileChangeTableBody logs={logs} />
+  return (
+    <ProfileChangeTableBody
+      logs={logs}
+      meta={meta}
+      sort={sort}
+      order={order}
+      onSortChange={handleSortChange}
+      onToggleOrder={handleToggleOrder}
+      onPageChange={setPage}
+    />
+  )
 }
 
-function ProfileChangeTableBody({ logs }) {
-  const { field, direction, setField, toggleDirection, sortedItems } = useSort(
-    logs,
-    CHANGE_LOG_SORT_ACCESSORS,
-    { initialField: 'changed_at', initialDirection: 'desc' },
-  )
-  const { page, pageCount, pageItems, totalItems, setPage } = usePagination(sortedItems, PAGE_SIZE)
-
+function ProfileChangeTableBody({
+  logs,
+  meta,
+  sort,
+  order,
+  onSortChange,
+  onToggleOrder,
+  onPageChange,
+}) {
   return (
     <>
       <Card className="py-0">
         <CardContent className="px-0">
           <Pagination
-            page={page}
-            pageCount={pageCount}
-            totalItems={totalItems}
-            pageSize={PAGE_SIZE}
-            onPageChange={setPage}
+            page={meta.page}
+            pageCount={meta.total_pages}
+            totalItems={meta.total}
+            pageSize={meta.page_size}
+            onPageChange={onPageChange}
             className="border-t-0"
             sortControl={
               <SortControl
-                value={field}
-                onChange={setField}
-                direction={direction}
-                onToggleDirection={toggleDirection}
+                value={sort}
+                onChange={onSortChange}
+                direction={order}
+                onToggleDirection={onToggleOrder}
                 options={CHANGE_LOG_SORT_OPTIONS}
               />
             }
@@ -118,7 +140,7 @@ function ProfileChangeTableBody({ logs }) {
           {/* Mobile card list (< md) - see HistoryTable.jsx for the general
               rationale of swapping wide tables for stacked cards below md. */}
           <div className="flex flex-col gap-3 p-4 md:hidden">
-            {pageItems.map((log) => (
+            {logs.map((log) => (
               <div key={log.id} className="rounded-lg border border-gray-100 p-3 text-sm">
                 <div className="flex items-center justify-between gap-3">
                   <span className="font-medium text-gray-900">#{log.user_id}</span>
@@ -165,7 +187,7 @@ function ProfileChangeTableBody({ logs }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {pageItems.map((log) => (
+                {logs.map((log) => (
                   <tr key={log.id} className="align-top hover:bg-gray-50">
                     <td className="px-5 py-3 text-gray-700">
                       <span className="block w-full break-words whitespace-normal">
@@ -209,7 +231,28 @@ function ProfileChangeTableBody({ logs }) {
 }
 
 function PasswordChangeTable() {
-  const { data: logs = [], isLoading, isError, error } = usePasswordChangeLogsQuery()
+  const [page, setPage] = useState(1)
+  const { sort, order, setSort, toggleOrder } = useServerSort('changed_at', 'desc')
+
+  function handleSortChange(field) {
+    setSort(field)
+    setPage(1)
+  }
+
+  function handleToggleOrder() {
+    toggleOrder()
+    setPage(1)
+  }
+
+  const { data, isLoading, isError, error } = usePasswordChangeLogsQuery({
+    page,
+    limit: PAGE_SIZE,
+    sort,
+    order,
+  })
+
+  const logs = data?.items ?? []
+  const meta = data?.meta ?? { ...EMPTY_PAGINATION_META, page_size: PAGE_SIZE }
 
   if (isLoading) {
     return (
@@ -227,7 +270,7 @@ function PasswordChangeTable() {
       </Card>
     )
   }
-  if (logs.length === 0) {
+  if (meta.total === 0) {
     return (
       <Card className="py-0">
         <CardContent className="px-5 py-6 text-center text-sm text-gray-400">
@@ -237,34 +280,45 @@ function PasswordChangeTable() {
     )
   }
 
-  return <PasswordChangeTableBody logs={logs} />
+  return (
+    <PasswordChangeTableBody
+      logs={logs}
+      meta={meta}
+      sort={sort}
+      order={order}
+      onSortChange={handleSortChange}
+      onToggleOrder={handleToggleOrder}
+      onPageChange={setPage}
+    />
+  )
 }
 
-function PasswordChangeTableBody({ logs }) {
-  const { field, direction, setField, toggleDirection, sortedItems } = useSort(
-    logs,
-    CHANGE_LOG_SORT_ACCESSORS,
-    { initialField: 'changed_at', initialDirection: 'desc' },
-  )
-  const { page, pageCount, pageItems, totalItems, setPage } = usePagination(sortedItems, PAGE_SIZE)
-
+function PasswordChangeTableBody({
+  logs,
+  meta,
+  sort,
+  order,
+  onSortChange,
+  onToggleOrder,
+  onPageChange,
+}) {
   return (
     <>
       <Card className="py-0">
         <CardContent className="px-0">
           <Pagination
-            page={page}
-            pageCount={pageCount}
-            totalItems={totalItems}
-            pageSize={PAGE_SIZE}
-            onPageChange={setPage}
+            page={meta.page}
+            pageCount={meta.total_pages}
+            totalItems={meta.total}
+            pageSize={meta.page_size}
+            onPageChange={onPageChange}
             className="border-t-0"
             sortControl={
               <SortControl
-                value={field}
-                onChange={setField}
-                direction={direction}
-                onToggleDirection={toggleDirection}
+                value={sort}
+                onChange={onSortChange}
+                direction={order}
+                onToggleDirection={onToggleOrder}
                 options={CHANGE_LOG_SORT_OPTIONS}
               />
             }
@@ -277,7 +331,7 @@ function PasswordChangeTableBody({ logs }) {
           {/* Mobile card list (< md) - see HistoryTable.jsx for the general
               rationale of swapping wide tables for stacked cards below md. */}
           <div className="flex flex-col gap-3 p-4 md:hidden">
-            {pageItems.map((log) => (
+            {logs.map((log) => (
               <div
                 key={log.id}
                 className="flex items-center justify-between gap-3 rounded-lg border border-gray-100 p-3 text-sm"
@@ -309,7 +363,7 @@ function PasswordChangeTableBody({ logs }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {pageItems.map((log) => (
+                {logs.map((log) => (
                   <tr key={log.id} className="align-top hover:bg-gray-50">
                     <td className="px-5 py-3 text-gray-700">
                       <span className="block w-full break-words whitespace-normal">
@@ -338,7 +392,28 @@ function PasswordChangeTableBody({ logs }) {
 }
 
 function DownloadLogTable() {
-  const { data: logs = [], isLoading, isError, error } = useDownloadLogsQuery()
+  const [page, setPage] = useState(1)
+  const { sort, order, setSort, toggleOrder } = useServerSort('created_at', 'desc')
+
+  function handleSortChange(field) {
+    setSort(field)
+    setPage(1)
+  }
+
+  function handleToggleOrder() {
+    toggleOrder()
+    setPage(1)
+  }
+
+  const { data, isLoading, isError, error } = useDownloadLogsQuery({
+    page,
+    limit: PAGE_SIZE,
+    sort,
+    order,
+  })
+
+  const logs = data?.items ?? []
+  const meta = data?.meta ?? { ...EMPTY_PAGINATION_META, page_size: PAGE_SIZE }
 
   if (isLoading) {
     return (
@@ -356,7 +431,7 @@ function DownloadLogTable() {
       </Card>
     )
   }
-  if (logs.length === 0) {
+  if (meta.total === 0) {
     return (
       <Card className="py-0">
         <CardContent className="px-5 py-6 text-center text-sm text-gray-400">
@@ -366,34 +441,45 @@ function DownloadLogTable() {
     )
   }
 
-  return <DownloadLogTableBody logs={logs} />
+  return (
+    <DownloadLogTableBody
+      logs={logs}
+      meta={meta}
+      sort={sort}
+      order={order}
+      onSortChange={handleSortChange}
+      onToggleOrder={handleToggleOrder}
+      onPageChange={setPage}
+    />
+  )
 }
 
-function DownloadLogTableBody({ logs }) {
-  const { field, direction, setField, toggleDirection, sortedItems } = useSort(
-    logs,
-    DOWNLOAD_LOG_SORT_ACCESSORS,
-    { initialField: 'created_at', initialDirection: 'desc' },
-  )
-  const { page, pageCount, pageItems, totalItems, setPage } = usePagination(sortedItems, PAGE_SIZE)
-
+function DownloadLogTableBody({
+  logs,
+  meta,
+  sort,
+  order,
+  onSortChange,
+  onToggleOrder,
+  onPageChange,
+}) {
   return (
     <>
       <Card className="py-0">
         <CardContent className="px-0">
           <Pagination
-            page={page}
-            pageCount={pageCount}
-            totalItems={totalItems}
-            pageSize={PAGE_SIZE}
-            onPageChange={setPage}
+            page={meta.page}
+            pageCount={meta.total_pages}
+            totalItems={meta.total}
+            pageSize={meta.page_size}
+            onPageChange={onPageChange}
             className="border-t-0"
             sortControl={
               <SortControl
-                value={field}
-                onChange={setField}
-                direction={direction}
-                onToggleDirection={toggleDirection}
+                value={sort}
+                onChange={onSortChange}
+                direction={order}
+                onToggleDirection={onToggleOrder}
                 options={DOWNLOAD_LOG_SORT_OPTIONS}
               />
             }
@@ -406,7 +492,7 @@ function DownloadLogTableBody({ logs }) {
           {/* Mobile card list (< md) - see HistoryTable.jsx for the general
               rationale of swapping wide tables for stacked cards below md. */}
           <div className="flex flex-col gap-3 p-4 md:hidden">
-            {pageItems.map((log) => (
+            {logs.map((log) => (
               <div key={log.id} className="rounded-lg border border-gray-100 p-3 text-sm">
                 <div className="flex items-center justify-between gap-3">
                   <span className="font-medium text-gray-900">PO #{log.po_id}</span>
@@ -442,7 +528,7 @@ function DownloadLogTableBody({ logs }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {pageItems.map((log) => (
+                {logs.map((log) => (
                   <tr key={log.id} className="align-top hover:bg-gray-50">
                     <td className="px-5 py-3 text-gray-700">
                       <span className="block w-full break-words whitespace-normal">

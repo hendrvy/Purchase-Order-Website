@@ -3,7 +3,7 @@
  * @import { Role } from '@/types/role.js'
  */
 
-import { apiClient, ApiError } from '@/api/client.js'
+import { apiClient, ApiError, unwrapPaginated } from '@/api/client.js'
 import { MOCK_COMPANIES } from '@/mocks/companies.js'
 
 /**
@@ -36,52 +36,83 @@ function delay(ms) {
 
 let mockSequence = MOCK_COMPANIES.length + 1
 
-/**
- * @param {{ role?: Role | 'all', search?: string }} filters
- * @returns {User[]}
- */
-function filterMockCompanies(filters) {
-  let result = MOCK_COMPANIES
-
-  if (filters.role && filters.role !== 'all') {
-    result = result.filter((company) => company.role === filters.role)
-  }
-
-  if (filters.search) {
-    const term = filters.search.trim().toLowerCase()
-    if (term) {
-      result = result.filter(
-        (company) =>
-          company.username.toLowerCase().includes(term) ||
-          company.company_name.toLowerCase().includes(term) ||
-          company.email.toLowerCase().includes(term),
-      )
-    }
-  }
-
-  return [...result].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+/** Per-field comparators for mock sorting, mirroring CompanySortColumns in
+ * backend/api/database.go. */
+const MOCK_COMPANY_SORT_ACCESSORS = {
+  created_at: (company) => new Date(company.created_at).getTime(),
+  username: (company) => company.username,
+  company_name: (company) => company.company_name,
+  email: (company) => company.email,
+  role: (company) => company.role,
 }
 
 /**
- * Admin-only: list all companies/users, optionally filtered by role and/or
- * a search term matched against username/company_name/email (see
- * backend/api/admin_handlers.go AdminListCompanies).
+ * In-memory equivalent of GetAllCompaniesDB (backend): filter, sort, slice.
  *
- * @param {{ role?: Role | 'all', search?: string }} [filters]
- * @returns {Promise<User[]>}
+ * @param {{ role?: Role | 'all', search?: string, page?: number, limit?: number, sort?: string, order?: 'asc' | 'desc' }} [filters]
+ * @returns {{ items: User[], meta: import('@/types/api.js').PaginationMeta }}
+ */
+function mockQueryCompanies(filters = {}) {
+  const { role, search, page = 1, limit = 10, sort = 'created_at', order = 'desc' } = filters
+
+  let result = MOCK_COMPANIES
+
+  if (role && role !== 'all') {
+    result = result.filter((company) => company.role === role)
+  }
+
+  const term = search?.trim().toLowerCase()
+  if (term) {
+    result = result.filter(
+      (company) =>
+        company.username.toLowerCase().includes(term) ||
+        company.company_name.toLowerCase().includes(term) ||
+        company.email.toLowerCase().includes(term),
+    )
+  }
+
+  const getValue = MOCK_COMPANY_SORT_ACCESSORS[sort] ?? MOCK_COMPANY_SORT_ACCESSORS.created_at
+  const dir = order === 'asc' ? 1 : -1
+  result = [...result].sort((a, b) => {
+    const aValue = getValue(a)
+    const bValue = getValue(b)
+    if (typeof aValue === 'number' && typeof bValue === 'number') return (aValue - bValue) * dir
+    return String(aValue).localeCompare(String(bValue), 'id', { sensitivity: 'base' }) * dir
+  })
+
+  const total = result.length
+  const start = (page - 1) * limit
+
+  return {
+    items: result.slice(start, start + limit),
+    meta: { page, page_size: limit, total, total_pages: Math.ceil(total / limit) },
+  }
+}
+
+/**
+ * Admin-only: list a page of companies/users, optionally filtered by role
+ * and/or a search term matched against username/company_name/email, sorted
+ * server-side (see backend/api/admin_handlers.go AdminListCompanies).
+ * Returns `{ items, meta }`.
+ *
+ * @param {{ role?: Role | 'all', search?: string, page?: number, limit?: number, sort?: string, order?: 'asc' | 'desc' }} [filters]
+ * @returns {Promise<{ items: User[], meta: import('@/types/api.js').PaginationMeta }>}
  */
 export async function getCompanies(filters = {}) {
   if (shouldUseMocks()) {
     await delay(300)
-    return filterMockCompanies(filters)
+    return mockQueryCompanies(filters)
   }
 
-  const params = {}
-  if (filters.role && filters.role !== 'all') params.role = filters.role
-  if (filters.search) params.search = filters.search
+  const { role, search, page = 1, limit = 10, sort, order } = filters
+  const params = { page, limit }
+  if (role && role !== 'all') params.role = role
+  if (search) params.search = search
+  if (sort) params.sort = sort
+  if (order) params.order = order
 
   const response = await apiClient.get('/api/companies', { params })
-  return response.data.data ?? []
+  return unwrapPaginated(response)
 }
 
 /**

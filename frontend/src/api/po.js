@@ -3,8 +3,9 @@
  * @import { Attachment } from '@/types/attachment.js'
  */
 
-import { apiClient, ApiError } from '@/api/client.js'
+import { apiClient, ApiError, unwrapPaginated } from '@/api/client.js'
 import { getStoredUser } from '@/lib/storage.js'
+import { isAdminLikeRole } from '@/types/role.js'
 import { MOCK_PURCHASE_ORDERS } from '@/mocks/po.js'
 import { MOCK_COMPANIES } from '@/mocks/companies.js'
 
@@ -135,9 +136,8 @@ export async function createPurchaseOrder(input) {
 /**
  * Attaches the requesting company (minus password) to each mock PO,
  * mirroring the `Preload("Company")` done server-side (see
- * GetAllPurchaseOrdersDB/GetPurchaseOrdersByCompanyDB in
- * backend/api/database.go), so the History table's "Perusahaan" column
- * has data to show in mock mode too.
+ * GetPurchaseOrdersDB in backend/api/database.go), so the History table's
+ * "Perusahaan" column has data to show in mock mode too.
  *
  * @param {PurchaseOrder[]} orders
  * @returns {PurchaseOrder[]}
@@ -149,28 +149,190 @@ function withMockCompany(orders) {
   }))
 }
 
+/** Per-field comparators for mock sorting, mirroring PurchaseOrderSortColumns
+ * in backend/api/database.go. */
+const MOCK_PO_SORT_ACCESSORS = {
+  updated_at: (order) => new Date(order.updated_at).getTime(),
+  created_at: (order) => new Date(order.created_at).getTime(),
+  company: (order) => order.company?.company_name ?? '',
+  status: (order) => order.status,
+  total_amount: (order) => order.total_amount,
+  po_number: (order) => order.po_number,
+}
+
 /**
- * Fetches purchase orders visible to the logged-in user. The backend
- * applies role-based filtering server-side: `user` role only sees their
- * own company's POs, `validator`/`admin` see all (paginated).
+ * @param {string | number | null | undefined} a
+ * @param {string | number | null | undefined} b
+ * @param {number} dir
+ */
+function compareValues(a, b, dir) {
+  if (a == null && b == null) return 0
+  if (a == null) return 1
+  if (b == null) return -1
+  if (typeof a === 'number' && typeof b === 'number') return (a - b) * dir
+  return String(a).localeCompare(String(b), 'id', { sensitivity: 'base' }) * dir
+}
+
+/**
+ * In-memory equivalent of GetPurchaseOrdersDB (backend): filter, sort, then
+ * slice a page.
  *
- * @param {{ page?: number, limit?: number }} [options]
- * @returns {Promise<PurchaseOrder[]>}
+ * @param {{ page?: number, limit?: number, sort?: string, order?: 'asc' | 'desc', status?: string, search?: string, companyID?: number }} [options]
+ * @returns {{ items: PurchaseOrder[], meta: import('@/types/api.js').PaginationMeta }}
+ */
+function mockQueryPurchaseOrders(options = {}) {
+  const {
+    page = 1,
+    limit = 10,
+    sort = 'updated_at',
+    order = 'desc',
+    status,
+    search,
+    companyID,
+  } = options
+
+  let result = withMockCompany(MOCK_PURCHASE_ORDERS)
+
+  if (companyID != null) {
+    result = result.filter((order_) => order_.company_id === companyID)
+  }
+  if (status) {
+    result = result.filter((order_) => order_.status === status)
+  }
+  const term = search?.trim().toLowerCase()
+  if (term) {
+    result = result.filter(
+      (order_) =>
+        order_.po_number?.toLowerCase().includes(term) ||
+        order_.title?.toLowerCase().includes(term) ||
+        order_.resi_number?.toLowerCase().includes(term) ||
+        order_.company?.company_name?.toLowerCase().includes(term),
+    )
+  }
+
+  const getValue = MOCK_PO_SORT_ACCESSORS[sort] ?? MOCK_PO_SORT_ACCESSORS.updated_at
+  const dir = order === 'asc' ? 1 : -1
+  result = [...result].sort((a, b) => compareValues(getValue(a), getValue(b), dir))
+
+  const total = result.length
+  const start = (page - 1) * limit
+
+  return {
+    items: result.slice(start, start + limit),
+    meta: { page, page_size: limit, total, total_pages: Math.ceil(total / limit) },
+  }
+}
+
+/**
+ * Builds the mock dashboard summary, mirroring GetDashboardSummaryDB
+ * (backend/api/database.go).
+ *
+ * @param {number | undefined} companyID
+ * @param {boolean} includeAccounts
+ */
+function mockDashboardSummary(companyID, includeAccounts) {
+  const visible = withMockCompany(MOCK_PURCHASE_ORDERS).filter(
+    (order) => companyID == null || order.company_id === companyID,
+  )
+
+  /** @type {Record<string, number>} */
+  const countsByStatus = {}
+  for (const order of visible) {
+    countsByStatus[order.status] = (countsByStatus[order.status] ?? 0) + 1
+  }
+
+  const now = new Date()
+  const completedThisMonth = visible.filter((order) => {
+    if (order.status !== 'complete') return false
+    const updatedAt = new Date(order.updated_at)
+    return updatedAt.getMonth() === now.getMonth() && updatedAt.getFullYear() === now.getFullYear()
+  }).length
+
+  const recentOrders = [...visible]
+    .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
+    .slice(0, 5)
+
+  /** @type {{ purchase_orders: object, accounts?: object }} */
+  const summary = {
+    purchase_orders: {
+      total: visible.length,
+      counts_by_status: countsByStatus,
+      completed_this_month: completedThisMonth,
+      recent_orders: recentOrders,
+    },
+  }
+
+  if (includeAccounts) {
+    /** @type {Record<string, number>} */
+    const byRole = {}
+    for (const company of MOCK_COMPANIES) {
+      byRole[company.role] = (byRole[company.role] ?? 0) + 1
+    }
+    summary.accounts = { total: MOCK_COMPANIES.length, by_role: byRole }
+  }
+
+  return summary
+}
+
+/**
+ * Fetches a page of purchase orders visible to the logged-in user. The
+ * backend applies role-based scoping server-side and does the filtering,
+ * sorting, and pagination in SQL (see
+ * backend/api/purchase_order_handlers.go GetPurchaseOrders) - this just
+ * forwards the params. Returns `{ items, meta }`.
+ *
+ * @param {{ page?: number, limit?: number, sort?: string, order?: 'asc' | 'desc', status?: string, search?: string }} [options]
+ * @returns {Promise<{ items: PurchaseOrder[], meta: import('@/types/api.js').PaginationMeta }>}
  */
 export async function getPurchaseOrders(options = {}) {
   if (shouldUseMocks()) {
     await delay(300)
     const user = getStoredUser()
-    const visibleOrders =
-      user?.role === 'user'
-        ? MOCK_PURCHASE_ORDERS.filter((order) => order.company_id === user.id)
-        : MOCK_PURCHASE_ORDERS
-    return withMockCompany(visibleOrders)
+    return mockQueryPurchaseOrders({
+      ...options,
+      companyID: user?.role === 'user' ? user.id : undefined,
+    })
   }
 
-  const { page = 1, limit = 100 } = options
-  const response = await apiClient.get('/api/purchase-orders', { params: { page, limit } })
-  return response.data.data ?? []
+  const { page = 1, limit = 10, sort, order, status, search } = options
+  const params = { page, limit }
+  if (sort) params.sort = sort
+  if (order) params.order = order
+  if (status) params.status = status
+  if (search) params.search = search
+
+  const response = await apiClient.get('/api/purchase-orders', { params })
+  return unwrapPaginated(response)
+}
+
+/**
+ * Fetches the dashboard aggregates (PO counts/totals + recent orders, and
+ * per-role account counts for admins) in a single request instead of
+ * listing every PO/company client-side (see
+ * backend/api/purchase_order_handlers.go GetDashboardSummary).
+ *
+ * @returns {Promise<{
+ *   purchase_orders: {
+ *     total: number,
+ *     counts_by_status: Record<string, number>,
+ *     completed_this_month: number,
+ *     recent_orders: PurchaseOrder[],
+ *   },
+ *   accounts?: { total: number, by_role: Record<string, number> },
+ * }>}
+ */
+export async function getDashboardSummary() {
+  if (shouldUseMocks()) {
+    await delay(300)
+    const user = getStoredUser()
+    return mockDashboardSummary(
+      user?.role === 'user' ? user.id : undefined,
+      isAdminLikeRole(user?.role),
+    )
+  }
+
+  const response = await apiClient.get('/api/summary/dashboard')
+  return response.data.data
 }
 
 /**

@@ -1,6 +1,7 @@
 import { KeyRound, Plus, Search } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { EMPTY_PAGINATION_META } from '@/api/client.js'
 import { Card, CardContent } from '@/components/ui/card.jsx'
 import { Button } from '@/components/ui/button.jsx'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog.jsx'
@@ -11,8 +12,8 @@ import { formatDate } from '@/lib/format.js'
 import { ASSIGNABLE_ROLES, ROLE_LABELS } from '@/types/role.js'
 import { useCompaniesQuery } from '@/hooks/useCompaniesQuery.js'
 import { useUpdateCompanyRoleMutation } from '@/hooks/useUpdateCompanyRoleMutation.js'
-import { usePagination } from '@/hooks/usePagination.js'
-import { useSort } from '@/hooks/useSort.js'
+import { useDebouncedValue } from '@/hooks/useDebouncedValue.js'
+import { useServerSort } from '@/hooks/useServerSort.js'
 import { AddAccountModal } from '@/components/admin/AddAccountModal.jsx'
 import { ResetPasswordModal } from '@/components/admin/ResetPasswordModal.jsx'
 import { RoleBadge } from '@/components/admin/RoleBadge.jsx'
@@ -26,15 +27,6 @@ const SORT_OPTIONS = [
   { value: 'company_name', label: 'Perusahaan' },
 ]
 
-// Defined at module scope so the reference stays stable across renders
-// (it's a dependency of the useSort memo - see hooks/useSort.js).
-const SORT_ACCESSORS = {
-  created_at: (company) =>
-    company.created_at ? new Date(company.created_at).getTime() : null,
-  username: (company) => company.username,
-  company_name: (company) => company.company_name,
-}
-
 /**
  * Admin-only page: lists every account (company) in the system with its
  * role, lets the admin change a user's role inline, reset their password,
@@ -45,30 +37,56 @@ export function UserManagementPage() {
   const { user: currentUser } = useAuth()
   const [roleFilter, setRoleFilter] = useState('all')
   const [search, setSearch] = useState('')
+  const debouncedSearch = useDebouncedValue(search, 300)
+  const trimmedSearch = debouncedSearch.trim()
   const [isAddAccountOpen, setIsAddAccountOpen] = useState(false)
   const [resetPasswordTarget, setResetPasswordTarget] = useState(null)
   /** @type {[{ company: object, newRole: string } | null, Function]} */
   const [pendingRoleChange, setPendingRoleChange] = useState(null)
 
+  const [page, setPage] = useState(1)
+  const { sort, order, setSort, toggleOrder } = useServerSort('created_at', 'desc')
+
+  // Any filter/sort change alters the result set, so the previous page
+  // offset is no longer meaningful - the handlers below reset to page 1.
+  function handleRoleFilterChange(role) {
+    setRoleFilter(role)
+    setPage(1)
+  }
+
+  function handleSearchChange(value) {
+    setSearch(value)
+    setPage(1)
+  }
+
+  function handleSortChange(field) {
+    setSort(field)
+    setPage(1)
+  }
+
+  function handleToggleOrder() {
+    toggleOrder()
+    setPage(1)
+  }
+
   const {
-    data: companies = [],
+    data,
     isLoading,
     isError,
     error,
-  } = useCompaniesQuery({ role: roleFilter, search })
+  } = useCompaniesQuery({
+    role: roleFilter,
+    search: trimmedSearch || undefined,
+    page,
+    limit: PAGE_SIZE,
+    sort,
+    order,
+  })
+
+  const companies = data?.items ?? []
+  const meta = data?.meta ?? { ...EMPTY_PAGINATION_META, page_size: PAGE_SIZE }
 
   const updateRoleMutation = useUpdateCompanyRoleMutation()
-
-  const { field, direction, setField, toggleDirection, sortedItems: sortedCompanies } = useSort(
-    companies,
-    SORT_ACCESSORS,
-    { initialField: 'created_at', initialDirection: 'desc' },
-  )
-
-  const { page, pageCount, pageItems, totalItems, setPage } = usePagination(
-    sortedCompanies,
-    PAGE_SIZE,
-  )
 
   // Only stages the change and opens a confirmation dialog - the actual
   // mutation only fires once the admin confirms (see confirmRoleChange
@@ -128,7 +146,7 @@ export function UserManagementPage() {
               <button
                 key={role}
                 type="button"
-                onClick={() => setRoleFilter(role)}
+                onClick={() => handleRoleFilterChange(role)}
                 className={
                   isActive
                     ? 'rounded-[20px] border border-[#B00100] bg-red-50 px-4 py-1.5 text-sm text-[#B00100]'
@@ -146,29 +164,29 @@ export function UserManagementPage() {
           <input
             type="text"
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => handleSearchChange(event.target.value)}
             placeholder="Cari username, perusahaan, email..."
             className="w-full rounded-md border border-gray-300 bg-white py-2 pr-3 pl-9 text-sm focus:border-[#D97745] focus:outline-none focus:ring-1 focus:ring-[#D97745]"
           />
         </div>
       </div>
 
-      {!isLoading && !isError && companies.length > 0 && (
+      {!isLoading && !isError && meta.total > 0 && (
         <Card className="py-0">
           <CardContent className="px-0">
             <Pagination
-              page={page}
-              pageCount={pageCount}
-              totalItems={totalItems}
-              pageSize={PAGE_SIZE}
+              page={meta.page}
+              pageCount={meta.total_pages}
+              totalItems={meta.total}
+              pageSize={meta.page_size}
               onPageChange={setPage}
               className="border-t-0"
               sortControl={
                 <SortControl
-                  value={field}
-                  onChange={setField}
-                  direction={direction}
-                  onToggleDirection={toggleDirection}
+                  value={sort}
+                  onChange={handleSortChange}
+                  direction={order}
+                  onToggleDirection={handleToggleOrder}
                   options={SORT_OPTIONS}
                 />
               }
@@ -200,7 +218,7 @@ export function UserManagementPage() {
                 </CardContent>
               </Card>
             ) : (
-              pageItems.map((company) => {
+              companies.map((company) => {
                 const isSelf = company.id === currentUser?.id
                 const isSuperAdmin = company.role === 'super_admin'
 
@@ -329,7 +347,7 @@ export function UserManagementPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                      {pageItems.map((company) => {
+                      {companies.map((company) => {
                         const isSelf = company.id === currentUser?.id
                         // super_admin's role/password are permanently locked
                         // - can't be changed by anyone via the app, not even

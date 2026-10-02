@@ -2,46 +2,23 @@ import { AlertCircle, CheckCircle2, ClipboardList, Loader } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card.jsx'
 
 /**
- * @import { PurchaseOrder } from '@/types/po.js'
+ * Counts orders that need attention: still awaiting verification, or
+ * rejected orders that may need revision/resubmission.
+ *
+ * @param {Record<string, number>} countsByStatus
  */
+function countNeedsAction(countsByStatus) {
+  return (countsByStatus.verifying ?? 0) + (countsByStatus.rejected ?? 0)
+}
 
 /**
  * Counts how many orders are currently in process or shipping status
  * (i.e. approved and actively being fulfilled).
  *
- * @param {PurchaseOrder[]} orders
+ * @param {Record<string, number>} countsByStatus
  */
-function countInProgress(orders) {
-  return orders.filter((order) => order.status === 'process' || order.status === 'shipping')
-    .length
-}
-
-/**
- * Counts how many orders were completed within the current calendar month.
- *
- * @param {PurchaseOrder[]} orders
- */
-function countCompletedThisMonth(orders) {
-  const now = new Date()
-
-  return orders.filter((order) => {
-    if (order.status !== 'complete') return false
-    const updatedAt = new Date(order.updated_at)
-    return (
-      updatedAt.getMonth() === now.getMonth() && updatedAt.getFullYear() === now.getFullYear()
-    )
-  }).length
-}
-
-/**
- * Counts orders that need attention: still awaiting verification, or
- * rejected orders that may need revision/resubmission.
- *
- * @param {PurchaseOrder[]} orders
- */
-function countNeedsAction(orders) {
-  return orders.filter((order) => order.status === 'verifying' || order.status === 'rejected')
-    .length
+function countInProgress(countsByStatus) {
+  return (countsByStatus.process ?? 0) + (countsByStatus.shipping ?? 0)
 }
 
 /** Icon + color tint per card, keyed by item label. */
@@ -53,14 +30,16 @@ const ICON_STYLES = {
 }
 
 /**
- * @param {{ orders: PurchaseOrder[] }} props
+ * @param {{ summary: { total: number, counts_by_status: Record<string, number>, completed_this_month: number } }} props
  */
-export function SummaryCards({ orders }) {
+export function SummaryCards({ summary }) {
+  const counts = summary.counts_by_status ?? {}
+
   const items = [
-    { label: 'Total PO', value: orders.length },
-    { label: 'Need Approval', value: countNeedsAction(orders) },
-    { label: 'On Progress', value: countInProgress(orders) },
-    { label: 'Completed', value: countCompletedThisMonth(orders) },
+    { label: 'Total PO', value: summary.total },
+    { label: 'Need Approval', value: countNeedsAction(counts) },
+    { label: 'On Progress', value: countInProgress(counts) },
+    { label: 'Completed', value: summary.completed_this_month },
   ]
 
   return (

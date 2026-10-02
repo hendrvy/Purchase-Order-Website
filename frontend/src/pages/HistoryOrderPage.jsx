@@ -1,13 +1,17 @@
 import { Search } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { EMPTY_PAGINATION_META } from '@/api/client.js'
 import { usePurchaseOrdersQuery } from '@/hooks/usePurchaseOrdersQuery.js'
+import { useDebouncedValue } from '@/hooks/useDebouncedValue.js'
+import { useServerSort } from '@/hooks/useServerSort.js'
 import { HistoryStatusFilter } from '@/components/history/HistoryStatusFilter.jsx'
 import { HistoryTable } from '@/components/history/HistoryTable.jsx'
 import { PO_STATUSES } from '@/types/po.js'
 
+const PAGE_SIZE = 10
+
 export function HistoryOrderPage() {
-  const { data: orders = [], isLoading, isError, error } = usePurchaseOrdersQuery()
   const [searchParams, setSearchParams] = useSearchParams()
 
   // Lets the Dashboard's status chart deep-link here (e.g.
@@ -17,13 +21,51 @@ export function HistoryOrderPage() {
   // leave the table silently filtered to nothing.
   const statusParam = searchParams.get('status')
   const statusFilter = PO_STATUSES.includes(statusParam) ? statusParam : 'all'
+
   const [search, setSearch] = useState('')
+  const debouncedSearch = useDebouncedValue(search, 300)
+  const trimmedSearch = debouncedSearch.trim()
+
+  const [page, setPage] = useState(1)
+  const { sort, order, setSort, toggleOrder } = useServerSort('updated_at', 'desc')
+
+  // Any filter/sort change alters the result set, so the previous page
+  // offset is no longer meaningful - the handlers below reset to page 1
+  // (done here rather than in an effect so the reset happens in the same
+  // render as the change).
+  function handleSearchChange(value) {
+    setSearch(value)
+    setPage(1)
+  }
+
+  function handleSortChange(field) {
+    setSort(field)
+    setPage(1)
+  }
+
+  function handleToggleOrder() {
+    toggleOrder()
+    setPage(1)
+  }
+
+  const { data, isLoading, isError, error } = usePurchaseOrdersQuery({
+    page,
+    limit: PAGE_SIZE,
+    sort,
+    order,
+    status: statusFilter === 'all' ? undefined : statusFilter,
+    search: trimmedSearch || undefined,
+  })
+
+  const orders = data?.items ?? []
+  const meta = data?.meta ?? { ...EMPTY_PAGINATION_META, page_size: PAGE_SIZE }
 
   // Keeps the ?status= query param in sync so the active filter survives
   // a refresh/share, and so switching away from a chart-driven filter via
   // the pill buttons below updates the URL too (replace, not push - this
   // is a filter, not a new "page" worth of back-button history).
   function handleStatusFilterChange(nextStatus) {
+    setPage(1)
     setSearchParams(
       (params) => {
         if (nextStatus === 'all') {
@@ -36,22 +78,6 @@ export function HistoryOrderPage() {
       { replace: true },
     )
   }
-
-  const filteredOrders = useMemo(() => {
-    const byStatus =
-      statusFilter === 'all' ? orders : orders.filter((order) => order.status === statusFilter)
-
-    const term = search.trim().toLowerCase()
-    if (!term) return byStatus
-
-    return byStatus.filter(
-      (order) =>
-        order.po_number?.toLowerCase().includes(term) ||
-        order.title?.toLowerCase().includes(term) ||
-        order.resi_number?.toLowerCase().includes(term) ||
-        order.company?.company_name?.toLowerCase().includes(term),
-    )
-  }, [orders, statusFilter, search])
 
   return (
     <section className="space-y-6">
@@ -70,7 +96,7 @@ export function HistoryOrderPage() {
           <input
             type="text"
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => handleSearchChange(event.target.value)}
             placeholder="Cari No. PO, judul, resi, perusahaan..."
             className="w-full rounded-md border border-gray-300 bg-white py-2 pr-3 pl-9 text-sm focus:border-[#D97745] focus:outline-none focus:ring-1 focus:ring-[#D97745]"
           />
@@ -85,7 +111,17 @@ export function HistoryOrderPage() {
         </p>
       )}
 
-      {!isLoading && !isError && <HistoryTable orders={filteredOrders} />}
+      {!isLoading && !isError && (
+        <HistoryTable
+          orders={orders}
+          meta={meta}
+          sort={sort}
+          order={order}
+          onSortChange={handleSortChange}
+          onToggleOrder={handleToggleOrder}
+          onPageChange={setPage}
+        />
+      )}
     </section>
   )
 }
