@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { getStoredToken } from '@/lib/storage.js'
+import { clearAuthStorage, getStoredToken } from '@/lib/storage.js'
 
 /**
  * Thrown for any failed API call so UI code can rely on a single,
@@ -46,6 +46,12 @@ apiClient.interceptors.response.use(
     if (error.response) {
       const { status, data } = error.response
       const message = data?.message ?? data?.error ?? 'Terjadi kesalahan pada server.'
+
+      if (status === 401) {
+        clearAuthStorage()
+        window.location.href = '/login'
+      }
+
       return Promise.reject(new ApiError(message, { status, errors: data?.errors }))
     }
     if (error.request) {
