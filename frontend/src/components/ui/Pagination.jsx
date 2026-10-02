@@ -36,8 +36,10 @@ function getPageRange(page, pageCount, siblingCount) {
  * Pagination controls for tables that slice a client-side list (see
  * hooks/usePagination.js). Shows "Menampilkan X-Y dari Z" alongside
  * prev/next + numbered page buttons. Renders nothing when there's only
- * one page, since controls would be pointless with nothing to paginate
- * to.
+ * one page AND no `sortControl` is provided, since the controls would be
+ * pointless with nothing to paginate to - but when a `sortControl` is
+ * passed (see components/ui/SortControl.jsx), it still renders so the
+ * sort dropdown stays usable even for a single page of results.
  *
  * @param {{
  *   page: number,
@@ -46,10 +48,19 @@ function getPageRange(page, pageCount, siblingCount) {
  *   pageSize: number,
  *   onPageChange: (page: number) => void,
  *   className?: string,
+ *   sortControl?: import('react').ReactNode,
  * }} props
  */
-export function Pagination({ page, pageCount, totalItems, pageSize, onPageChange, className }) {
-  if (pageCount <= 1) return null
+export function Pagination({
+  page,
+  pageCount,
+  totalItems,
+  pageSize,
+  onPageChange,
+  className,
+  sortControl,
+}) {
+  if (pageCount <= 1 && !sortControl) return null
 
   const rangeStart = (page - 1) * pageSize + 1
   const rangeEnd = Math.min(page * pageSize, totalItems)
@@ -66,48 +77,57 @@ export function Pagination({ page, pageCount, totalItems, pageSize, onPageChange
         Menampilkan {rangeStart}-{rangeEnd} dari {totalItems}
       </p>
 
-      <div className="flex items-center gap-1">
-        <button
-          type="button"
-          onClick={() => onPageChange(page - 1)}
-          disabled={page <= 1}
-          aria-label="Halaman sebelumnya"
-          className="flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 text-gray-500 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
-        >
-          <ChevronLeft size={16} />
-        </button>
+      <div className="flex flex-wrap items-center justify-center gap-3">
+        {sortControl}
 
-        {pages.map((p) =>
-          typeof p === 'number' ? (
+        {pageCount > 1 && (
+          <div className="flex items-center gap-1">
             <button
-              key={p}
               type="button"
-              onClick={() => onPageChange(p)}
-              aria-current={p === page ? 'page' : undefined}
-              className={
-                p === page
-                  ? 'flex h-8 w-8 items-center justify-center rounded-md border border-[#B00100] bg-red-50 text-sm text-[#B00100]'
-                  : 'flex h-8 w-8 items-center justify-center rounded-md border border-transparent text-sm text-gray-600 transition hover:bg-gray-100'
-              }
+              onClick={() => onPageChange(page - 1)}
+              disabled={page <= 1}
+              aria-label="Halaman sebelumnya"
+              className="flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 text-gray-500 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
             >
-              {p}
+              <ChevronLeft size={16} />
             </button>
-          ) : (
-            <span key={p} className="flex h-8 w-8 items-center justify-center text-sm text-gray-400">
-              &hellip;
-            </span>
-          ),
-        )}
 
-        <button
-          type="button"
-          onClick={() => onPageChange(page + 1)}
-          disabled={page >= pageCount}
-          aria-label="Halaman berikutnya"
-          className="flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 text-gray-500 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
-        >
-          <ChevronRight size={16} />
-        </button>
+            {pages.map((p) =>
+              typeof p === 'number' ? (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => onPageChange(p)}
+                  aria-current={p === page ? 'page' : undefined}
+                  className={
+                    p === page
+                      ? 'flex h-8 w-8 items-center justify-center rounded-md border border-[#B00100] bg-red-50 text-sm text-[#B00100]'
+                      : 'flex h-8 w-8 items-center justify-center rounded-md border border-transparent text-sm text-gray-600 transition hover:bg-gray-100'
+                  }
+                >
+                  {p}
+                </button>
+              ) : (
+                <span
+                  key={p}
+                  className="flex h-8 w-8 items-center justify-center text-sm text-gray-400"
+                >
+                  &hellip;
+                </span>
+              ),
+            )}
+
+            <button
+              type="button"
+              onClick={() => onPageChange(page + 1)}
+              disabled={page >= pageCount}
+              aria-label="Halaman berikutnya"
+              className="flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 text-gray-500 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

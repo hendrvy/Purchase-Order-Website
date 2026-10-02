@@ -4,10 +4,12 @@ import { toast } from 'sonner'
 import { Card, CardContent } from '@/components/ui/card.jsx'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog.jsx'
 import { Pagination } from '@/components/ui/Pagination.jsx'
+import { SortControl } from '@/components/ui/SortControl.jsx'
 import { formatCurrency, formatDate } from '@/lib/format.js'
 import { useAuth } from '@/context/AuthContext.jsx'
 import { useDeletePOMutation } from '@/hooks/useDeletePOMutation.js'
 import { usePagination } from '@/hooks/usePagination.js'
+import { useSort } from '@/hooks/useSort.js'
 import { POStatusUpdateControl } from '@/components/history/POStatusUpdateControl.jsx'
 import { AttachmentThumbnailList } from '@/components/history/AttachmentThumbnailList.jsx'
 import { AttachmentPreviewModal } from '@/components/history/AttachmentPreviewModal.jsx'
@@ -15,16 +17,29 @@ import { isAdminLikeRole } from '@/types/role.js'
 
 const PAGE_SIZE = 10
 
+const SORT_OPTIONS = [
+  { value: 'updated_at', label: 'Tanggal Diperbarui' },
+  { value: 'company', label: 'Perusahaan' },
+]
+
+// Defined at module scope so the reference stays stable across renders
+// (it's a dependency of the useSort memo - see hooks/useSort.js).
+const SORT_ACCESSORS = {
+  updated_at: (order) => new Date(order.updated_at).getTime(),
+  company: (order) => order.company?.company_name ?? '',
+}
+
 /**
  * @import { PurchaseOrder } from '@/types/po.js'
  * @import { Attachment } from '@/types/attachment.js'
  */
 
 /**
- * Table of purchase orders for the History page, sorted by most recently
- * updated first. Includes the shipping resi number and clickable
- * thumbnails for every attachment uploaded with the order (opens a full
- * preview modal on click).
+ * Table of purchase orders for the History page. Defaults to most recently
+ * updated first, with client-side sort controls (date updated / company)
+ * rendered alongside the pagination buttons. Includes the shipping resi
+ * number and clickable thumbnails for every attachment uploaded with the
+ * order (opens a full preview modal on click).
  *
  * @param {{ orders: PurchaseOrder[] }} props
  */
@@ -41,8 +56,10 @@ export function HistoryTable({ orders }) {
   // is only useful - and only populated by the backend - for those roles.
   const showCompanyColumn = user?.role === 'validator' || isAdminLikeRole(user?.role)
 
-  const sortedOrders = [...orders].sort(
-    (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
+  const { field, direction, setField, toggleDirection, sortedItems: sortedOrders } = useSort(
+    orders,
+    SORT_ACCESSORS,
+    { initialField: 'updated_at', initialDirection: 'desc' },
   )
 
   const { page, pageCount, pageItems, totalItems, setPage } = usePagination(
@@ -86,6 +103,15 @@ export function HistoryTable({ orders }) {
               pageSize={PAGE_SIZE}
               onPageChange={setPage}
               className="border-t-0"
+              sortControl={
+                <SortControl
+                  value={field}
+                  onChange={setField}
+                  direction={direction}
+                  onToggleDirection={toggleDirection}
+                  options={SORT_OPTIONS}
+                />
+              }
             />
           </CardContent>
         </Card>

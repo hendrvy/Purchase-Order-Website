@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card.jsx'
 import { Pagination } from '@/components/ui/Pagination.jsx'
+import { SortControl } from '@/components/ui/SortControl.jsx'
 import { formatDateTime } from '@/lib/format.js'
 import { usePagination } from '@/hooks/usePagination.js'
+import { useSort } from '@/hooks/useSort.js'
 import {
   useDownloadLogsQuery,
   usePasswordChangeLogsQuery,
@@ -10,6 +12,28 @@ import {
 } from '@/hooks/useAuditLogsQuery.js'
 
 const PAGE_SIZE = 10
+
+const CHANGE_LOG_SORT_OPTIONS = [
+  { value: 'changed_at', label: 'Waktu' },
+  { value: 'user_id', label: 'User' },
+]
+
+const DOWNLOAD_LOG_SORT_OPTIONS = [
+  { value: 'created_at', label: 'Waktu' },
+  { value: 'user_id', label: 'User' },
+]
+
+// Defined at module scope so the references stay stable across renders
+// (they're dependencies of the useSort memo - see hooks/useSort.js).
+const CHANGE_LOG_SORT_ACCESSORS = {
+  changed_at: (log) => new Date(log.changed_at).getTime(),
+  user_id: (log) => log.user_id,
+}
+
+const DOWNLOAD_LOG_SORT_ACCESSORS = {
+  created_at: (log) => new Date(log.created_at).getTime(),
+  user_id: (log) => log.user_id,
+}
 
 const TABS = [
   { key: 'profile', label: 'Perubahan Profil' },
@@ -58,7 +82,12 @@ function ProfileChangeTable() {
 }
 
 function ProfileChangeTableBody({ logs }) {
-  const { page, pageCount, pageItems, totalItems, setPage } = usePagination(logs, PAGE_SIZE)
+  const { field, direction, setField, toggleDirection, sortedItems } = useSort(
+    logs,
+    CHANGE_LOG_SORT_ACCESSORS,
+    { initialField: 'changed_at', initialDirection: 'desc' },
+  )
+  const { page, pageCount, pageItems, totalItems, setPage } = usePagination(sortedItems, PAGE_SIZE)
 
   return (
     <>
@@ -71,6 +100,15 @@ function ProfileChangeTableBody({ logs }) {
             pageSize={PAGE_SIZE}
             onPageChange={setPage}
             className="border-t-0"
+            sortControl={
+              <SortControl
+                value={field}
+                onChange={setField}
+                direction={direction}
+                onToggleDirection={toggleDirection}
+                options={CHANGE_LOG_SORT_OPTIONS}
+              />
+            }
           />
         </CardContent>
       </Card>
@@ -203,7 +241,12 @@ function PasswordChangeTable() {
 }
 
 function PasswordChangeTableBody({ logs }) {
-  const { page, pageCount, pageItems, totalItems, setPage } = usePagination(logs, PAGE_SIZE)
+  const { field, direction, setField, toggleDirection, sortedItems } = useSort(
+    logs,
+    CHANGE_LOG_SORT_ACCESSORS,
+    { initialField: 'changed_at', initialDirection: 'desc' },
+  )
+  const { page, pageCount, pageItems, totalItems, setPage } = usePagination(sortedItems, PAGE_SIZE)
 
   return (
     <>
@@ -216,6 +259,15 @@ function PasswordChangeTableBody({ logs }) {
             pageSize={PAGE_SIZE}
             onPageChange={setPage}
             className="border-t-0"
+            sortControl={
+              <SortControl
+                value={field}
+                onChange={setField}
+                direction={direction}
+                onToggleDirection={toggleDirection}
+                options={CHANGE_LOG_SORT_OPTIONS}
+              />
+            }
           />
         </CardContent>
       </Card>
@@ -318,7 +370,12 @@ function DownloadLogTable() {
 }
 
 function DownloadLogTableBody({ logs }) {
-  const { page, pageCount, pageItems, totalItems, setPage } = usePagination(logs, PAGE_SIZE)
+  const { field, direction, setField, toggleDirection, sortedItems } = useSort(
+    logs,
+    DOWNLOAD_LOG_SORT_ACCESSORS,
+    { initialField: 'created_at', initialDirection: 'desc' },
+  )
+  const { page, pageCount, pageItems, totalItems, setPage } = usePagination(sortedItems, PAGE_SIZE)
 
   return (
     <>
@@ -331,6 +388,15 @@ function DownloadLogTableBody({ logs }) {
             pageSize={PAGE_SIZE}
             onPageChange={setPage}
             className="border-t-0"
+            sortControl={
+              <SortControl
+                value={field}
+                onChange={setField}
+                direction={direction}
+                onToggleDirection={toggleDirection}
+                options={DOWNLOAD_LOG_SORT_OPTIONS}
+              />
+            }
           />
         </CardContent>
       </Card>
