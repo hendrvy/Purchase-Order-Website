@@ -2,7 +2,7 @@ import { ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { POStatusBadge } from '@/components/history/POStatusBadge.jsx'
-import { formatCurrency, formatRelativeTime } from '@/lib/format.js'
+import { formatRelativeTime } from '@/lib/format.js'
 
 /**
  * @import { PurchaseOrder } from '@/types/po.js'
@@ -41,18 +41,11 @@ export function RecentOrdersCard({ orders, limit = 5 }) {
             {recentOrders.map((order) => (
               <li key={order.id} className="flex items-center justify-between gap-3 py-3">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-gray-900">{order.title}</p>
-                  <p className="text-xs text-gray-500">
-                    {order.po_number} &middot; {formatRelativeTime(order.updated_at)}
-                  </p>
+                  <p className="truncate text-sm font-medium text-gray-900">{order.po_number}</p>
+                  <p className="text-xs text-gray-500">{formatRelativeTime(order.updated_at)}</p>
                 </div>
 
-                <div className="flex flex-shrink-0 flex-col items-end gap-1">
-                  <span className="text-xs font-medium text-gray-700">
-                    {formatCurrency(order.total_amount)}
-                  </span>
-                  <POStatusBadge status={order.status} />
-                </div>
+                <POStatusBadge status={order.status} />
               </li>
             ))}
           </ul>

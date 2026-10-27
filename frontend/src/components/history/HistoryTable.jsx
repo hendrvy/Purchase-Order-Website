@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card.jsx'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog.jsx'
 import { Pagination } from '@/components/ui/Pagination.jsx'
 import { SortControl } from '@/components/ui/SortControl.jsx'
-import { formatCurrency, formatDate } from '@/lib/format.js'
+import { formatDate } from '@/lib/format.js'
 import { useAuth } from '@/context/AuthContext.jsx'
 import { useDeletePOMutation } from '@/hooks/useDeletePOMutation.js'
 import { POStatusUpdateControl } from '@/components/history/POStatusUpdateControl.jsx'
@@ -137,7 +137,6 @@ export function HistoryTable({
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-gray-900">{order.po_number}</p>
-                    <p className="mt-0.5 break-words text-sm text-gray-700">{order.title}</p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     <POStatusUpdateControl order={order} role={user?.role} />
@@ -162,13 +161,6 @@ export function HistoryTable({
                     </span>
                   </div>
                 )}
-
-                <div className="flex justify-between gap-3 text-xs">
-                  <span className="text-gray-400">Total</span>
-                  <span className="text-right font-medium text-gray-900">
-                    {formatCurrency(order.total_amount)}
-                  </span>
-                </div>
 
                 <div className="flex justify-between gap-3 text-xs">
                   <span className="text-gray-400">Diperbarui</span>
@@ -227,21 +219,17 @@ export function HistoryTable({
                   reads as the table "jumping". */}
               <table className="w-full table-fixed text-left text-sm">
                 <colgroup>
-                  <col className={showCompanyColumn ? 'w-[12%]' : 'w-[14%]'} />
-                  {showCompanyColumn && <col className="w-[14%]" />}
-                  <col className={showCompanyColumn ? 'w-[22%]' : 'w-[26%]'} />
-                  <col className={showCompanyColumn ? 'w-[10%]' : 'w-[12%]'} />
-                  <col className={showCompanyColumn ? 'w-[11%]' : 'w-[13%]'} />
-                  <col className={showCompanyColumn ? 'w-[13%]' : 'w-[16%]'} />
-                  <col className={showCompanyColumn ? 'w-[10%]' : 'w-[10%]'} />
+                  <col className={showCompanyColumn ? 'w-[20%]' : 'w-[28%]'} />
+                  {showCompanyColumn && <col className="w-[22%]" />}
+                  <col className={showCompanyColumn ? 'w-[16%]' : 'w-[22%]'} />
+                  <col className={showCompanyColumn ? 'w-[20%]' : 'w-[26%]'} />
+                  <col className={showCompanyColumn ? 'w-[14%]' : 'w-[16%]'} />
                   <col className="w-[8%]" />
                 </colgroup>
                 <thead>
                   <tr className="border-b border-gray-100 text-xs font-medium text-gray-500">
                     <th className="px-5 py-3">No. PO</th>
                     {showCompanyColumn && <th className="px-5 py-3">Perusahaan</th>}
-                    <th className="px-5 py-3">Judul</th>
-                    <th className="px-5 py-3 text-right">Total</th>
                     <th className="px-5 py-3">Status</th>
                     <th className="px-5 py-3">File</th>
                     <th className="px-5 py-3">Diperbarui</th>
@@ -284,19 +272,6 @@ export function HistoryTable({
                           </span>
                         </td>
                       )}
-                      <td className="px-5 py-3 text-gray-700">
-                        <span className="block w-full break-words whitespace-normal">
-                          {order.title}
-                        </span>
-                      </td>
-                      <td className="overflow-hidden px-5 py-3 text-right text-gray-900">
-                        <span
-                          className="block w-full min-w-0 truncate"
-                          title={formatCurrency(order.total_amount)}
-                        >
-                          {formatCurrency(order.total_amount)}
-                        </span>
-                      </td>
                       <td className="overflow-hidden px-5 py-3">
                         <POStatusUpdateControl order={order} role={user?.role} />
                       </td>
