@@ -31,7 +31,8 @@ func handleDB() {
 		return
 	}
 
-	if db := api.DBConnect(); db == nil {
+	db := api.DBConnect()
+	if db == nil {
 		fmt.Println("Failed to connect to database")
 		return
 	}
@@ -41,7 +42,11 @@ func handleDB() {
 		createUserCLI()
 	case "migrate":
 		fmt.Println("Running migrations...")
-		// Add migration logic here
+		if err := api.RunMigrations(db); err != nil {
+			fmt.Printf("Migration failed: %v\n", err)
+			return
+		}
+		fmt.Println("Migrations done")
 	case "seed":
 		fmt.Println("Seeding database...")
 		// Add seed logic here
