@@ -69,6 +69,12 @@ async function mockCreatePurchaseOrder(input) {
   }
 
   const user = getStoredUser()
+  if (user?.role !== 'user' && !input.company_id) {
+    throw new ApiError('Nama perusahaan wajib dipilih.', {
+      status: 422,
+      errors: { company_id: 'Nama perusahaan wajib dipilih.' },
+    })
+  }
   const now = new Date().toISOString()
   const sequence = mockSequence++
 
@@ -76,7 +82,7 @@ async function mockCreatePurchaseOrder(input) {
   const newOrder = {
     id: 1000 + sequence,
     po_number: input.po_number.trim(),
-    company_id: user?.id ?? 0,
+    company_id: user?.role === 'user' ? user.id : (input.company_id ?? 0),
     title: '',
     total_amount: 0,
     notes: input.notes?.trim() || '',
@@ -113,7 +119,7 @@ export async function createPurchaseOrder(input) {
 
   const payload = {
     po_number: input.po_number.trim(),
-    company_id: user?.id,
+    company_id: user?.role === 'user' ? user.id : (input.company_id ?? 0),
     notes: input.notes ?? '',
   }
 

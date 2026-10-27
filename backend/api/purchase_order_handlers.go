@@ -240,20 +240,35 @@ func CreatePurchaseOrder(c *gin.Context) {
 		return
 	}
 
+	// A buyer always orders for their own account (payload company_id is
+	// ignored); validator/admin order on behalf of a chosen buyer account.
+	if c.GetString("role") == string(RoleUser) {
+		reqpo.CompanyID = c.GetUint("user_id")
+	}
+
 	if reqpo.CompanyID == 0 {
 		c.JSON(http.StatusBadRequest, JsonResponse{
 			Status:  http.StatusBadRequest,
 			Error:   "company_id is required and must be greater than 0",
-			Message: "Invalid po fields",
+			Message: "Nama perusahaan wajib dipilih",
 		})
 		return
 	}
 
-	if !ValidateCompanyExists(reqpo.CompanyID) {
+	var target Company
+	if err := DB.Select("id", "role").Where("id = ?", reqpo.CompanyID).First(&target).Error; err != nil {
 		c.JSON(http.StatusNotFound, JsonResponse{
 			Status:  http.StatusNotFound,
 			Error:   "Company not found",
 			Message: "Invalid company_id",
+		})
+		return
+	}
+	if c.GetString("role") != string(RoleUser) && target.Role != RoleUser {
+		c.JSON(http.StatusBadRequest, JsonResponse{
+			Status:  http.StatusBadRequest,
+			Error:   "company_id must belong to a buyer account",
+			Message: "Perusahaan harus berupa akun pemesan",
 		})
 		return
 	}

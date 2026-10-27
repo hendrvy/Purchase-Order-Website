@@ -118,7 +118,7 @@ func GetPurchaseOrdersDB(companyID *uint, page, limit int, sortColumn, direction
 		Order(sortColumn + " " + direction).
 		Offset((page - 1) * limit).
 		Limit(limit).
-		Preload("Attachments").
+		Preload("Attachments", buyerAttachmentsOnly).
 		Preload("Company").
 		Find(&purchaseOrders)
 
@@ -128,7 +128,48 @@ func GetPurchaseOrdersDB(companyID *uint, page, limit int, sortColumn, direction
 
 	stripPurchaseOrdersCompanyPassword(purchaseOrders)
 
+	if err := attachProofs(purchaseOrders); err != nil {
+		return nil, 0, err
+	}
+
 	return purchaseOrders, total, nil
+}
+
+// attachProofs - Fill PurchaseOrder.Proof from the latest note that carries
+// a proof attachment, using one query for the whole page.
+func attachProofs(pos []PurchaseOrder) error {
+	if len(pos) == 0 {
+		return nil
+	}
+	ids := make([]uint, len(pos))
+	index := make(map[uint]int, len(pos))
+	for i, po := range pos {
+		ids[i] = po.ID
+		index[po.ID] = i
+	}
+
+	var notes []PONote
+	err := DB.Preload("Attachment").
+		Where("purchase_order_id IN ? AND attachment_id IS NOT NULL", ids).
+		Order("created_at ASC, id ASC").
+		Find(&notes).Error
+	if err != nil {
+		return err
+	}
+	for _, n := range notes {
+		if n.Attachment == nil {
+			continue
+		}
+		pos[index[n.PurchaseOrderID]].Proof = &POProof{Type: n.ProofType, Attachment: *n.Attachment}
+	}
+	return nil
+}
+
+// buyerAttachmentsOnly - Preload scope that leaves out proof files (resi /
+// pickup) uploaded by staff on complete; those are shown with the note that
+// carries them, not among the files the buyer attached to the PO.
+func buyerAttachmentsOnly(tx *gorm.DB) *gorm.DB {
+	return tx.Where("attachments.id NOT IN (SELECT attachment_id FROM po_notes WHERE attachment_id IS NOT NULL)")
 }
 
 // GetPurchaseOrderByIDDB - Get purchase order by ID from database
@@ -137,7 +178,7 @@ func GetPurchaseOrderByIDDB(id uint) (*PurchaseOrder, error) {
 
 	var poByID PurchaseOrder
 
-	result := DB.Preload("Attachments").Preload("Company").First(&poByID, id)
+	result := DB.Preload("Attachments", buyerAttachmentsOnly).Preload("Company").First(&poByID, id)
 
 	if result.Error != nil {
 		return nil, result.Error
@@ -146,6 +187,12 @@ func GetPurchaseOrderByIDDB(id uint) (*PurchaseOrder, error) {
 	if poByID.Company != nil {
 		poByID.Company.Password = ""
 	}
+
+	single := []PurchaseOrder{poByID}
+	if err := attachProofs(single); err != nil {
+		return nil, err
+	}
+	poByID = single[0]
 
 	return &poByID, nil
 }

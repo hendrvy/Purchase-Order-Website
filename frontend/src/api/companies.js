@@ -116,6 +116,27 @@ export async function getCompanies(filters = {}) {
 }
 
 /**
+ * Staff-only (validator/admin): search buyer accounts by company name or
+ * username for the "Nama Perusahaan" autocomplete on the create-PO form (see
+ * backend/api/admin_handlers.go ListBuyerOptions).
+ *
+ * @param {string} [search]
+ * @returns {Promise<Array<{ id: number, company_name: string, username: string }>>}
+ */
+export async function getCompanyOptions(search = '') {
+  if (shouldUseMocks()) {
+    await delay(200)
+    const { items } = mockQueryCompanies({ role: 'user', search, limit: 20, sort: 'company_name', order: 'asc' })
+    return items.map(({ id, company_name, username }) => ({ id, company_name, username }))
+  }
+
+  const response = await apiClient.get('/api/company-options', {
+    params: search ? { search } : {},
+  })
+  return response.data.data ?? []
+}
+
+/**
  * Admin-only: create a new account with an explicit role (see
  * backend/api/admin_handlers.go AdminCreateCompany).
  *

@@ -62,7 +62,8 @@ export const TERMINAL_PO_STATUSES = ['complete', 'rejected']
  * @property {string} [notes]
  * @property {string} [resi_number]
  * @property {POStatus} status
- * @property {Attachment[]} [attachments]
+ * @property {Attachment[]} [attachments] - Files the buyer attached (proof files are excluded).
+ * @property {{ type: 'resi' | 'pickup', attachment: Attachment }} [proof] - Resi / pickup proof uploaded on complete.
  * @property {string} created_at
  * @property {string} updated_at
  */
@@ -70,6 +71,7 @@ export const TERMINAL_PO_STATUSES = ['complete', 'rejected']
 /**
  * @typedef {Object} CreatePOInput
  * @property {string} po_number
+ * @property {number} [company_id] - Buyer account the PO is for. Only used by validator/admin; for a `user` the backend always uses their own account.
  * @property {string} [notes]
  * @property {File[]} attachments - Images and/or PDFs supporting the request.
  */

@@ -19,6 +19,10 @@ const (
 	ProofTypePickup = "pickup"
 )
 
+// ProofSubfolder - proof files (resi / pickup) live in their own folder under
+// the upload dir, separate from the files the buyer attaches to the PO.
+const ProofSubfolder = "proofs"
+
 func isValidProofType(t string) bool {
 	return t == ProofTypeResi || t == ProofTypePickup
 }
@@ -97,7 +101,7 @@ func saveProofFile(c *gin.Context) (*Attachment, string, error) {
 
 	attachment := &Attachment{
 		FileName: file.Filename,
-		FilePath: GenerateUniqueFilename(file.Filename),
+		FilePath: ProofSubfolder + "/" + GenerateUniqueFilename(file.Filename),
 		MimeType: GetMimeType(file.Filename),
 	}
 	dst := filepath.Join(folderPath, attachment.FilePath)

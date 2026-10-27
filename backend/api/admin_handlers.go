@@ -68,6 +68,40 @@ func AdminListCompanies(c *gin.Context) {
 	})
 }
 
+// ListBuyerOptions - Minimal list of buyer accounts (id, company_name,
+// username) for the "Nama Perusahaan" autocomplete when validator/admin
+// create a PO on behalf of a company. Open to all staff, unlike
+// AdminListCompanies, and exposes no email/phone/password.
+func ListBuyerOptions(c *gin.Context) {
+	search := strings.TrimSpace(c.Query("search"))
+
+	companies, _, err := GetAllCompaniesDB(string(RoleUser), search, 1, 20, "company_name", "asc")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, JsonResponse{
+			Status:  http.StatusInternalServerError,
+			Error:   err.Error(),
+			Message: "Failed to retrieve companies",
+		})
+		return
+	}
+
+	type option struct {
+		ID          uint   `json:"id"`
+		CompanyName string `json:"company_name"`
+		Username    string `json:"username"`
+	}
+	options := make([]option, 0, len(companies))
+	for _, company := range companies {
+		options = append(options, option{ID: company.ID, CompanyName: company.CompanyName, Username: company.Username})
+	}
+
+	c.JSON(http.StatusOK, JsonResponse{
+		Status:  http.StatusOK,
+		Message: "Retrieved companies",
+		Data:    options,
+	})
+}
+
 // AdminCreateCompany - Create a new company/user account with an explicit
 // role (user, validator, or admin). Unlike the public Register endpoint,
 // the caller here is already an authenticated admin, so the role field is

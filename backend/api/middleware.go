@@ -96,6 +96,24 @@ func RequireAdmin() gin.HandlerFunc {
 	}
 }
 
+// RequireStaff - Middleware yang membatasi akses untuk validator, admin, atau
+// super_admin (bukan role "user").
+func RequireStaff() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		role := c.GetString("role")
+		if role != string(RoleValidator) && role != string(RoleAdmin) && role != string(RoleSuperAdmin) {
+			c.JSON(http.StatusForbidden, JsonResponse{
+				Status:  http.StatusForbidden,
+				Error:   "Access denied",
+				Message: "Only staff can access this resource",
+			})
+			c.Abort()
+			return
+		}
+		c.Next()
+	}
+}
+
 // CORSMiddleware - Middleware untuk CORS
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {

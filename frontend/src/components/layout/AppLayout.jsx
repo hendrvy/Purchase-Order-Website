@@ -1,22 +1,37 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { ChevronUp, ChevronDown, LogOut, Menu, User, X } from 'lucide-react'
+import {
+  ChevronUp,
+  ChevronDown,
+  FilePlus2,
+  History,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  ScrollText,
+  User,
+  Users,
+  X,
+} from 'lucide-react'
 import { useAuth } from '@/context/AuthContext.jsx'
 import { ROLE_LABELS, isAdminLikeRole } from '@/types/role.js'
 import { ProfileAvatar } from '@/components/profile/ProfileAvatar.jsx'
 import logo from '@/assets/logo.png'
 
-const DASHBOARD_NAV_ITEM = { to: '/dashboard', label: 'Dashboard' }
-const HISTORY_NAV_ITEM = { to: '/history', label: 'History' }
+const DASHBOARD_NAV_ITEM = { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard }
+const HISTORY_NAV_ITEM = { to: '/history', label: 'History', icon: History }
 
-// Only the "user" role submits purchase orders - validator/admin only
-// review/manage them via the History table, so they have no need for the
-// create-PO form/nav item.
-const PURCHASE_ORDER_NAV_ITEM = { to: '/purchase-order', label: 'Purchase Order' }
+// Every role can create a PO: buyers for themselves, validator/admin on
+// behalf of a company they pick by name.
+const PURCHASE_ORDER_NAV_ITEM = {
+  to: '/purchase-order',
+  label: 'Purchase Order',
+  icon: FilePlus2,
+}
 
 const ADMIN_NAV_ITEMS = [
-  { to: '/admin/users', label: 'Kelola User' },
-  { to: '/admin/activity-log', label: 'Log Aktivitas' },
+  { to: '/admin/users', label: 'Kelola User', icon: Users },
+  { to: '/admin/activity-log', label: 'Log Aktivitas', icon: ScrollText },
 ]
 
 export function AppLayout() {
@@ -27,11 +42,13 @@ export function AppLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const profileRef = useRef(null)
 
-  const navItems = [
-    DASHBOARD_NAV_ITEM,
-    ...(user?.role === 'user' ? [PURCHASE_ORDER_NAV_ITEM] : []),
-    HISTORY_NAV_ITEM,
-    ...(isAdminLikeRole(user?.role) ? ADMIN_NAV_ITEMS : []),
+  // Sections rendered top to bottom; a section without a `title` has no
+  // heading. The admin-only section is only added for admin-like roles.
+  const navSections = [
+    { items: [DASHBOARD_NAV_ITEM, PURCHASE_ORDER_NAV_ITEM, HISTORY_NAV_ITEM] },
+    ...(isAdminLikeRole(user?.role)
+      ? [{ title: 'Administrasi', items: ADMIN_NAV_ITEMS }]
+      : []),
   ]
 
   // Close the profile dropdown when clicking anywhere outside of it.
@@ -157,21 +174,31 @@ export function AppLayout() {
         </div>
 
         {/* Navigation - the only scrollable region of the sidebar. */}
-        <nav className="flex flex-1 flex-col gap-2 overflow-y-auto px-4">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                `border-l-2 px-4 py-2 text-sm font-medium transition ${
-                  isActive
-                    ? 'border-[#B00100] bg-gray-100 text-black'
-                    : 'border-transparent text-gray-600 hover:bg-gray-100 hover:text-black'
-                }`
-              }
-            >
-              {item.label}
-            </NavLink>
+        <nav className="flex flex-1 flex-col gap-5 overflow-y-auto px-4">
+          {navSections.map((section) => (
+            <div key={section.title ?? 'main'} className="flex flex-col gap-1">
+              {section.title && (
+                <p className="px-4 pb-1 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                  {section.title}
+                </p>
+              )}
+              {section.items.map(({ to, label, icon: Icon }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 border-l-2 px-4 py-2 text-sm font-medium transition ${
+                      isActive
+                        ? 'border-[#B00100] bg-gray-100 text-black'
+                        : 'border-transparent text-gray-600 hover:bg-gray-100 hover:text-black'
+                    }`
+                  }
+                >
+                  <Icon size={17} className="flex-shrink-0" />
+                  {label}
+                </NavLink>
+              ))}
+            </div>
           ))}
         </nav>
 

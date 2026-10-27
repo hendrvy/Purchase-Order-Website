@@ -66,9 +66,18 @@ type PurchaseOrder struct {
 	Notes       string         `json:"notes"`
 	Status      string         `json:"status" gorm:"default:submitted"`
 	Attachments []Attachment   `json:"attachments,omitempty" gorm:"many2many:purchase_order_attachments;"`
+	// Proof - the resi / pickup proof uploaded on complete (filled by
+	// attachProofs, not a DB column).
+	Proof       *POProof       `json:"proof,omitempty" gorm:"-"`
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`
 	DeletedAt   gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
+}
+
+// POProof - Proof-of-delivery file of a purchase order (type is 'resi' or 'pickup').
+type POProof struct {
+	Type       string     `json:"type"`
+	Attachment Attachment `json:"attachment"`
 }
 
 type Attachment struct {
@@ -103,7 +112,7 @@ type PONote struct {
 	Message         string      `json:"message"`
 	StatusFrom      string      `json:"status_from,omitempty"`
 	StatusTo        string      `json:"status_to,omitempty"`
-	ProofType       string      `json:"proof_type,omitempty"`
+	ProofType       string      `json:"proof_type,omitempty" gorm:"default:null"`
 	AttachmentID    *uint       `json:"attachment_id,omitempty"`
 	Attachment      *Attachment `json:"attachment,omitempty" gorm:"foreignKey:AttachmentID;references:ID"`
 	CreatedAt       time.Time   `json:"created_at"`

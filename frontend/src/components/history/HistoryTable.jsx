@@ -5,7 +5,8 @@ import { Card, CardContent } from '@/components/ui/card.jsx'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog.jsx'
 import { Pagination } from '@/components/ui/Pagination.jsx'
 import { SortControl } from '@/components/ui/SortControl.jsx'
-import { formatCurrency, formatDate } from '@/lib/format.js'
+import { formatDate } from '@/lib/format.js'
+import { PROOF_TYPE_LABELS } from '@/lib/status.js'
 import { useAuth } from '@/context/AuthContext.jsx'
 import { useDeletePOMutation } from '@/hooks/useDeletePOMutation.js'
 import { POStatusUpdateControl } from '@/components/history/POStatusUpdateControl.jsx'
@@ -23,6 +24,25 @@ const SORT_OPTIONS = [
  * @import { PurchaseOrder } from '@/types/po.js'
  * @import { Attachment } from '@/types/attachment.js'
  */
+
+/**
+ * Resi / pickup proof of one order (uploaded by staff on complete), shown
+ * apart from the files the buyer attached. Renders a dash when absent.
+ *
+ * @param {{ proof: PurchaseOrder['proof'], onPreview: (a: Attachment) => void }} props
+ */
+function ProofCell({ proof, onPreview }) {
+  if (!proof?.attachment) return <span className="text-xs text-gray-400">-</span>
+
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-[11px] font-medium text-gray-500">
+        {PROOF_TYPE_LABELS[proof.type] ?? 'Bukti'}
+      </span>
+      <AttachmentThumbnailList attachments={[proof.attachment]} onPreview={onPreview} />
+    </div>
+  )
+}
 
 /**
  * Table of purchase orders for the History page. Filtering, sorting, and
@@ -136,8 +156,7 @@ export function HistoryTable({
               <CardContent className="flex flex-col gap-3 px-4 py-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-900">{order.po_number}</p>
-                    <p className="mt-0.5 break-words text-sm text-gray-700">{order.title}</p>
+                    <p className="break-words text-sm font-medium text-gray-900">{order.po_number}</p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     <POStatusUpdateControl order={order} role={user?.role} />
@@ -164,13 +183,6 @@ export function HistoryTable({
                 )}
 
                 <div className="flex justify-between gap-3 text-xs">
-                  <span className="text-gray-400">Total</span>
-                  <span className="text-right font-medium text-gray-900">
-                    {formatCurrency(order.total_amount)}
-                  </span>
-                </div>
-
-                <div className="flex justify-between gap-3 text-xs">
                   <span className="text-gray-400">Diperbarui</span>
                   <span className="text-right text-gray-500">{formatDate(order.updated_at)}</span>
                 </div>
@@ -182,6 +194,13 @@ export function HistoryTable({
                     onPreview={setPreviewAttachment}
                   />
                 </div>
+
+                {order.proof && (
+                  <div className="border-t border-gray-100 pt-2">
+                    <p className="mb-1.5 text-xs text-gray-400">Bukti</p>
+                    <ProofCell proof={order.proof} onPreview={setPreviewAttachment} />
+                  </div>
+                )}
 
                 <button
                   type="button"
@@ -227,23 +246,21 @@ export function HistoryTable({
                   reads as the table "jumping". */}
               <table className="w-full table-fixed text-left text-sm">
                 <colgroup>
-                  <col className={showCompanyColumn ? 'w-[12%]' : 'w-[14%]'} />
-                  {showCompanyColumn && <col className="w-[14%]" />}
-                  <col className={showCompanyColumn ? 'w-[22%]' : 'w-[26%]'} />
-                  <col className={showCompanyColumn ? 'w-[10%]' : 'w-[12%]'} />
-                  <col className={showCompanyColumn ? 'w-[11%]' : 'w-[13%]'} />
                   <col className={showCompanyColumn ? 'w-[13%]' : 'w-[16%]'} />
-                  <col className={showCompanyColumn ? 'w-[10%]' : 'w-[10%]'} />
+                  {showCompanyColumn && <col className="w-[16%]" />}
+                  <col className={showCompanyColumn ? 'w-[14%]' : 'w-[16%]'} />
+                  <col className={showCompanyColumn ? 'w-[21%]' : 'w-[24%]'} />
+                  <col className={showCompanyColumn ? 'w-[18%]' : 'w-[20%]'} />
+                  <col className={showCompanyColumn ? 'w-[10%]' : 'w-[16%]'} />
                   <col className="w-[8%]" />
                 </colgroup>
                 <thead>
                   <tr className="border-b border-gray-100 text-xs font-medium text-gray-500">
                     <th className="px-5 py-3">No. PO</th>
                     {showCompanyColumn && <th className="px-5 py-3">Perusahaan</th>}
-                    <th className="px-5 py-3">Judul</th>
-                    <th className="px-5 py-3 text-right">Total</th>
                     <th className="px-5 py-3">Status</th>
                     <th className="px-5 py-3">File</th>
+                    <th className="px-5 py-3">Bukti</th>
                     <th className="px-5 py-3">Diperbarui</th>
                     <th className="px-5 py-3" aria-label="Aksi" />
                   </tr>
@@ -284,19 +301,6 @@ export function HistoryTable({
                           </span>
                         </td>
                       )}
-                      <td className="px-5 py-3 text-gray-700">
-                        <span className="block w-full break-words whitespace-normal">
-                          {order.title}
-                        </span>
-                      </td>
-                      <td className="overflow-hidden px-5 py-3 text-right text-gray-900">
-                        <span
-                          className="block w-full min-w-0 truncate"
-                          title={formatCurrency(order.total_amount)}
-                        >
-                          {formatCurrency(order.total_amount)}
-                        </span>
-                      </td>
                       <td className="overflow-hidden px-5 py-3">
                         <POStatusUpdateControl order={order} role={user?.role} />
                       </td>
@@ -305,6 +309,9 @@ export function HistoryTable({
                           attachments={order.attachments}
                           onPreview={setPreviewAttachment}
                         />
+                      </td>
+                      <td className="overflow-hidden px-5 py-3">
+                        <ProofCell proof={order.proof} onPreview={setPreviewAttachment} />
                       </td>
                       <td className="px-5 py-3 text-gray-500">
                         <span className="block w-full break-words whitespace-normal">

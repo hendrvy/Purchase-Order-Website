@@ -35,10 +35,9 @@ export const router = createBrowserRouter([
           { path: 'history', element: <HistoryOrderPage /> },
           { path: 'profile', element: <ProfilePage /> },
           {
-            // Only the "user" role submits purchase orders - validator/
-            // admin only review/manage them via History, so this route
-            // (and its nav item) is off-limits to those roles.
-            element: <ProtectedRoute allowedRoles={['user']} />,
+            // Buyers order for themselves; validator/admin order on behalf
+            // of a company they pick by name (see PurchaseOrderPage).
+            element: <ProtectedRoute allowedRoles={['user', 'validator', ...ADMIN_LIKE_ROLES]} />,
             children: [{ path: 'purchase-order', element: <PurchaseOrderPage /> }],
           },
           {

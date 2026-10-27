@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { FilePreviewList } from '@/components/po/FilePreviewList.jsx'
 import { FileUploadZone } from '@/components/po/FileUploadZone.jsx'
+import { CompanyAutocomplete } from '@/components/po/CompanyAutocomplete.jsx'
+import { useAuth } from '@/context/AuthContext.jsx'
 import { useCreatePOMutation } from '@/hooks/useCreatePOMutation.js'
 
 const createPOSchema = z.object({
@@ -22,7 +24,11 @@ const createPOSchema = z.object({
 export function PurchaseOrderPage() {
   const navigate = useNavigate()
   const mutation = useCreatePOMutation()
+  const { user } = useAuth()
+  const isStaff = user?.role !== 'user'
 
+  const [company, setCompany] = useState(null)
+  const [companyError, setCompanyError] = useState(null)
   const [files, setFiles] = useState([])
   const [filesError, setFilesError] = useState(null)
 
@@ -59,18 +65,23 @@ export function PurchaseOrderPage() {
   }
 
   const onSubmit = (values) => {
+    if (isStaff && !company) {
+      setCompanyError('Pilih nama perusahaan dari daftar.')
+      return
+    }
     if (files.length === 0) {
       setFilesError('Lampirkan minimal satu file (gambar atau PDF).')
       return
     }
 
     mutation.mutate(
-      { ...values, attachments: files },
+      { ...values, company_id: isStaff ? company.id : undefined, attachments: files },
       {
         onSuccess: (order) => {
           toast.success(`Purchase order ${order.po_number} berhasil dibuat.`)
           reset()
           setFiles([])
+          setCompany(null)
           navigate('/history')
         },
         onError: (error) => {
@@ -93,6 +104,26 @@ export function PurchaseOrderPage() {
 
         <CardContent>
           <form className="space-y-5" onSubmit={handleSubmit(onSubmit)} noValidate>
+            {/* Nama Perusahaan - validator/admin order on behalf of a buyer */}
+            {isStaff && (
+              <div>
+                <label htmlFor="company_name" className="block text-sm font-medium text-gray-700">
+                  Nama Perusahaan
+                </label>
+                <CompanyAutocomplete
+                  id="company_name"
+                  value={company}
+                  onChange={(next) => {
+                    setCompany(next)
+                    setCompanyError(null)
+                  }}
+                  disabled={mutation.isPending}
+                  invalid={Boolean(companyError)}
+                />
+                {companyError && <p className="mt-1 text-xs text-red-600">{companyError}</p>}
+              </div>
+            )}
+
             {/* No. PO */}
             <div>
               <label htmlFor="po_number" className="block text-sm font-medium text-gray-700">
