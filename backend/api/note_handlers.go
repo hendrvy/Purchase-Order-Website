@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -156,10 +157,142 @@ func GetPurchaseOrderNotes(c *gin.Context) {
 		return
 	}
 
+	// Opening the thread marks everything in it as read for this user.
+	if len(notes) > 0 {
+		markNotesRead(c.GetUint("user_id"), poID, notes[len(notes)-1].ID)
+	}
+
 	c.JSON(http.StatusOK, JsonResponse{
 		Status:  http.StatusOK,
 		Message: "Success retrieving data",
 		Data:    notes,
+	})
+}
+
+// markNotesRead - Move the user's read marker for a PO forward to lastNoteID
+// (never backwards). Best effort: a failure only leaves the badge visible.
+func markNotesRead(userID, poID, lastNoteID uint) {
+	DB.Exec(`INSERT INTO po_note_reads (user_id, purchase_order_id, last_read_note_id, updated_at)
+		VALUES (?, ?, ?, NOW())
+		ON CONFLICT (user_id, purchase_order_id) DO UPDATE
+		SET last_read_note_id = GREATEST(po_note_reads.last_read_note_id, EXCLUDED.last_read_note_id),
+			updated_at = NOW()`, userID, poID, lastNoteID)
+}
+
+// UnreadNoteItem - One purchase order with unread messages in its thread.
+type UnreadNoteItem struct {
+	PurchaseOrderID uint      `json:"purchase_order_id"`
+	PONumber        string    `json:"po_number"`
+	CompanyName     string    `json:"company_name"`
+	UnreadCount     int       `json:"unread_count"`
+	LastMessage     string    `json:"last_message"`
+	LastStatusTo    string    `json:"last_status_to,omitempty"`
+	LastAuthor      string    `json:"last_author"`
+	LastAuthorRole  string    `json:"last_author_role"`
+	LastAt          time.Time `json:"last_at"`
+}
+
+// MaxUnreadNoteItems - Rows returned by GetUnreadNotes (the total counts all).
+const MaxUnreadNoteItems = 10
+
+// GetUnreadNotes - GET /notifications/notes
+// Unread = notes from the other side of the conversation newer than the
+// user's read marker on that PO: a buyer (`user`) sees staff notes on their
+// own POs, staff see buyer replies on any PO.
+func GetUnreadNotes(c *gin.Context) {
+	userID := c.GetUint("user_id")
+	isBuyer := c.GetString("role") == "user"
+
+	query := DB.Table("po_notes n").
+		Select(`n.purchase_order_id AS purchase_order_id, po.po_number AS po_number,
+			co.company_name AS company_name, COUNT(*) AS unread_count, MAX(n.id) AS last_note_id`).
+		Joins("JOIN purchase_orders po ON po.id = n.purchase_order_id AND po.deleted_at IS NULL").
+		Joins("JOIN companies co ON co.id = po.company_id").
+		Joins("LEFT JOIN po_note_reads r ON r.purchase_order_id = n.purchase_order_id AND r.user_id = ?", userID).
+		Where("n.id > COALESCE(r.last_read_note_id, 0)")
+	if isBuyer {
+		query = query.Where("po.company_id = ? AND n.author_role <> 'user'", userID)
+	} else {
+		query = query.Where("n.author_role = 'user'")
+	}
+
+	var rows []struct {
+		PurchaseOrderID uint
+		PONumber        string
+		CompanyName     string
+		UnreadCount     int
+		LastNoteID      uint
+	}
+	if err := query.
+		Group("n.purchase_order_id, po.po_number, co.company_name").
+		Order("MAX(n.id) DESC").
+		Scan(&rows).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, JsonResponse{
+			Status:  http.StatusInternalServerError,
+			Error:   err.Error(),
+			Message: "Failed to load unread notes",
+		})
+		return
+	}
+
+	total := 0
+	for _, r := range rows {
+		total += r.UnreadCount
+	}
+	if len(rows) > MaxUnreadNoteItems {
+		rows = rows[:MaxUnreadNoteItems]
+	}
+
+	lastIDs := make([]uint, 0, len(rows))
+	for _, r := range rows {
+		lastIDs = append(lastIDs, r.LastNoteID)
+	}
+	lastNotes := map[uint]PONote{}
+	if len(lastIDs) > 0 {
+		var notes []PONote
+		if err := DB.Preload("Author").Where("id IN ?", lastIDs).Find(&notes).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, JsonResponse{
+				Status:  http.StatusInternalServerError,
+				Error:   err.Error(),
+				Message: "Failed to load unread notes",
+			})
+			return
+		}
+		for _, n := range notes {
+			lastNotes[n.ID] = n
+		}
+	}
+
+	items := make([]UnreadNoteItem, 0, len(rows))
+	for _, r := range rows {
+		n := lastNotes[r.LastNoteID]
+		author := ""
+		if n.Author != nil {
+			author = n.Author.CompanyName
+			if author == "" {
+				author = n.Author.Username
+			}
+		}
+		items = append(items, UnreadNoteItem{
+			PurchaseOrderID: r.PurchaseOrderID,
+			PONumber:        r.PONumber,
+			CompanyName:     r.CompanyName,
+			UnreadCount:     r.UnreadCount,
+			LastMessage:     n.Message,
+			LastStatusTo:    n.StatusTo,
+			LastAuthor:      author,
+			LastAuthorRole:  n.AuthorRole,
+			LastAt:          n.CreatedAt,
+		})
+	}
+
+	c.JSON(http.StatusOK, JsonResponse{
+		Status:  http.StatusOK,
+		Message: "Success retrieving data",
+		Data: gin.H{
+			"total": total,
+			"items": items,
+		},
 	})
 }
 

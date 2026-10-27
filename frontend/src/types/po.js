@@ -45,6 +45,22 @@ export const PO_STATUSES = ['submitted', 'verifying', 'process', 'shipping', 'co
  * @property {string} created_at
  */
 
+/**
+ * One purchase order with unread messages in its note thread (backend
+ * `UnreadNoteItem`). The last_* fields describe the newest unread message.
+ *
+ * @typedef {Object} UnreadNoteItem
+ * @property {number} purchase_order_id
+ * @property {string} po_number
+ * @property {string} company_name
+ * @property {number} unread_count
+ * @property {string} last_message
+ * @property {POStatus} [last_status_to] - Set when the newest message is a status change.
+ * @property {string} last_author
+ * @property {string} last_author_role
+ * @property {string} last_at
+ */
+
 /** Statuses considered "final" - no further transitions are allowed from them. */
 /** @type {readonly POStatus[]} */
 export const TERMINAL_PO_STATUSES = ['complete', 'rejected']

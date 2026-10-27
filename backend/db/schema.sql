@@ -145,6 +145,22 @@ CREATE TABLE IF NOT EXISTS po_notes (
 CREATE INDEX IF NOT EXISTS idx_po_notes_purchase_order_id ON po_notes(purchase_order_id, created_at);
 
 -- ============================================================================
+-- PO_NOTE_READS TABLE (per-user "last read note" marker, drives unread badges)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS po_note_reads (
+    user_id INTEGER NOT NULL,
+    purchase_order_id INTEGER NOT NULL,
+    last_read_note_id INTEGER NOT NULL DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (user_id, purchase_order_id),
+    CONSTRAINT fk_po_note_reads_user
+        FOREIGN KEY (user_id) REFERENCES companies(id) ON DELETE CASCADE,
+    CONSTRAINT fk_po_note_reads_purchase_order
+        FOREIGN KEY (purchase_order_id) REFERENCES purchase_orders(id) ON DELETE CASCADE
+);
+
+-- ============================================================================
 -- HELPER FUNCTIONS
 -- ============================================================================
 

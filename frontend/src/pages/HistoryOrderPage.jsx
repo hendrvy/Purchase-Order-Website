@@ -3,6 +3,8 @@ import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { EMPTY_PAGINATION_META } from '@/api/client.js'
 import { usePurchaseOrdersQuery } from '@/hooks/usePurchaseOrdersQuery.js'
+import { usePurchaseOrderQuery } from '@/hooks/usePurchaseOrderQuery.js'
+import { PODetailModal } from '@/components/history/PODetailModal.jsx'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue.js'
 import { useServerSort } from '@/hooks/useServerSort.js'
 import { HistoryStatusFilter } from '@/components/history/HistoryStatusFilter.jsx'
@@ -21,6 +23,22 @@ export function HistoryOrderPage() {
   // leave the table silently filtered to nothing.
   const statusParam = searchParams.get('status')
   const statusFilter = PO_STATUSES.includes(statusParam) ? statusParam : 'all'
+
+  // Dashboard's unread-notes notification deep-links here (?po=<id>) to
+  // open that PO's detail modal and note thread directly.
+  const poParam = Number(searchParams.get('po'))
+  const linkedPOID = Number.isInteger(poParam) && poParam > 0 ? poParam : null
+  const { data: linkedOrder } = usePurchaseOrderQuery(linkedPOID)
+
+  function closeLinkedOrder() {
+    setSearchParams(
+      (params) => {
+        params.delete('po')
+        return params
+      },
+      { replace: true },
+    )
+  }
 
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebouncedValue(search, 300)
@@ -211,6 +229,10 @@ export function HistoryOrderPage() {
           onToggleOrder={handleToggleOrder}
           onPageChange={setPage}
         />
+      )}
+
+      {linkedPOID && linkedOrder && (
+        <PODetailModal order={linkedOrder} onClose={closeLinkedOrder} />
       )}
     </section>
   )

@@ -4,6 +4,7 @@ import { SummaryCards } from '@/components/dashboard/SummaryCards.jsx'
 import { UserRoleSummaryCards } from '@/components/dashboard/UserRoleSummaryCards.jsx'
 import { StatusDistributionChart } from '@/components/dashboard/StatusDistributionChart.jsx'
 import { RecentOrdersCard } from '@/components/dashboard/RecentOrdersCard.jsx'
+import { UnreadNotesCard } from '@/components/dashboard/UnreadNotesCard.jsx'
 import { isAdminLikeRole } from '@/types/role.js'
 
 export function DashboardPage() {
@@ -21,6 +22,8 @@ export function DashboardPage() {
           Selamat datang, <span className="font-medium text-red-700">{user?.company_name}</span>.
         </p>
       </div>
+
+      <UnreadNotesCard />
 
       {isLoading && <p className="text-sm text-gray-400">Memuat data purchase order...</p>}
 

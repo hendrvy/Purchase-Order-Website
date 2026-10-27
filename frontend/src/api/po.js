@@ -442,6 +442,43 @@ export async function getPurchaseOrderNotes(id) {
 }
 
 /**
+ * Fetches one purchase order (with company, attachments and proof).
+ *
+ * @param {number} id
+ * @returns {Promise<PurchaseOrder>}
+ */
+export async function getPurchaseOrderById(id) {
+  if (shouldUseMocks()) {
+    await delay(200)
+    const order = MOCK_PURCHASE_ORDERS.find((item) => item.id === id)
+    if (!order) {
+      throw new ApiError('Purchase order tidak ditemukan.', { status: 404 })
+    }
+    return withMockCompany([order])[0]
+  }
+
+  const response = await apiClient.get(`/api/purchase-orders/${id}`)
+  return response.data.data
+}
+
+/**
+ * Purchase orders with unread messages in their note thread, for the
+ * dashboard notification. `total` counts every unread message; `items`
+ * holds the most recent POs (one row per PO). See
+ * backend/api/note_handlers.go GetUnreadNotes.
+ *
+ * @returns {Promise<{ total: number, items: import('@/types/po.js').UnreadNoteItem[] }>}
+ */
+export async function getUnreadNotes() {
+  if (shouldUseMocks()) {
+    return { total: 0, items: [] }
+  }
+
+  const response = await apiClient.get('/api/notifications/notes')
+  return response.data.data ?? { total: 0, items: [] }
+}
+
+/**
  * Adds a reply to a note thread (buyer replies, or staff follow-ups).
  *
  * @param {number} id

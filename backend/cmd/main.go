@@ -59,6 +59,7 @@ func main() {
 	protected.GET("/purchase-orders/company/:company_id", api.GetPurchaseOrdersByCompany)
 	protected.GET("/purchase-orders/:id/notes", api.GetPurchaseOrderNotes)
 	protected.POST("/purchase-orders/:id/notes", api.CreatePurchaseOrderNote)
+	protected.GET("/notifications/notes", api.GetUnreadNotes)
 
 	// ========================================================================
 	// Dashboard Summary Route
