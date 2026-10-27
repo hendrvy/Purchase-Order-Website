@@ -11,31 +11,13 @@ import { FileUploadZone } from '@/components/po/FileUploadZone.jsx'
 import { useCreatePOMutation } from '@/hooks/useCreatePOMutation.js'
 
 const createPOSchema = z.object({
-  title: z
+  po_number: z
     .string()
     .trim()
-    .min(1, 'Nama/judul purchase order wajib diisi.')
-    .max(150, 'Maksimal 150 karakter.'),
-  total_amount: z.preprocess(
-    (value) => (value === undefined || value === '' ? undefined : Number(value)),
-    z
-      .number({ invalid_type_error: 'Nominal wajib diisi.' })
-      .positive('Nominal harus lebih besar dari 0.'),
-  ),
-  notes: z.string().trim().max(1000, 'Catatan maksimal 1000 karakter.').optional(),
+    .min(1, 'No. PO wajib diisi.')
+    .max(50, 'Maksimal 50 karakter.'),
+  notes: z.string().trim().max(255, 'Catatan maksimal 255 karakter.').optional(),
 })
-
-/**
- * Formats a raw number as grouped digits without a currency symbol, e.g.
- * 1500000 -> "1.500.000", used for the live nominal input display.
- *
- * @param {number | undefined} value
- * @returns {string}
- */
-function formatNominalDisplay(value) {
-  if (value === undefined || Number.isNaN(value)) return ''
-  return new Intl.NumberFormat('id-ID').format(value)
-}
 
 export function PurchaseOrderPage() {
   const navigate = useNavigate()
@@ -45,7 +27,6 @@ export function PurchaseOrderPage() {
   const [filesError, setFilesError] = useState(null)
 
   const {
-    control,
     register,
     handleSubmit,
     reset,
@@ -53,7 +34,7 @@ export function PurchaseOrderPage() {
     formState: { errors },
   } = useForm({
     resolver: zodResolver(createPOSchema),
-    defaultValues: { title: '', total_amount: undefined, notes: '' },
+    defaultValues: { po_number: '', notes: '' },
   })
 
   const notes = watch("notes")
@@ -112,52 +93,21 @@ export function PurchaseOrderPage() {
 
         <CardContent>
           <form className="space-y-5" onSubmit={handleSubmit(onSubmit)} noValidate>
-            {/* Title */}
+            {/* No. PO */}
             <div>
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-                Nama / Judul Purchase Order
+              <label htmlFor="po_number" className="block text-sm font-medium text-gray-700">
+                No. PO
               </label>
               <input
-                id="title"
+                id="po_number"
                 type="text"
-                placeholder="Contoh: ATK Kantor Bulan September"
+                maxLength={50}
+                placeholder="Contoh: PO-2026-0001"
                 className="mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-[#D97745] focus:outline-none focus:ring-1 focus:ring-[#D97745]"
-                {...register('title')}
+                {...register('po_number')}
               />
-              {errors.title && (
-                <p className="mt-1 text-xs text-red-600">{errors.title.message}</p>
-              )}
-            </div>
-
-            {/* Nominal */}
-            <div>
-              <label htmlFor="total_amount" className="block text-sm font-medium text-gray-700">
-                Nominal
-              </label>
-              <Controller
-                control={control}
-                name="total_amount"
-                render={({ field }) => (
-                  <div className="mt-1 flex items-center rounded-md border border-gray-300 bg-white px-3 focus-within:border-[#D97745] focus-within:ring-1 focus-within:ring-[#D97745]">
-                    <span className="pr-1 text-sm text-gray-500">Rp</span>
-                    <input
-                      id="total_amount"
-                      inputMode="numeric"
-                      type="text"
-                      placeholder="0"
-                      className="w-full bg-transparent py-2 text-sm focus:outline-none"
-                      value={formatNominalDisplay(field.value)}
-                      onChange={(event) => {
-                        const digits = event.target.value.replace(/\D/g, '')
-                        field.onChange(digits ? Number(digits) : undefined)
-                      }}
-                      onBlur={field.onBlur}
-                    />
-                  </div>
-                )}
-              />
-              {errors.total_amount && (
-                <p className="mt-1 text-xs text-red-600">{errors.total_amount.message}</p>
+              {errors.po_number && (
+                <p className="mt-1 text-xs text-red-600">{errors.po_number.message}</p>
               )}
             </div>
 
@@ -169,13 +119,13 @@ export function PurchaseOrderPage() {
               <textarea
                 id="notes"
                 rows={3}
-                maxLength={300}
+                maxLength={255}
                 placeholder="Tambahkan catatan atau keterangan tambahan..."
                 className="mt-1 w-full resize-none overflow-hidden rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-[#D97745] focus:outline-none focus:ring-1 focus:ring-[#D97745]"
                 {...register('notes')}
                 onInput={autoResize}
               />
-              <p className="text-right text-xs">{notes?.length ?? 0}/300</p>
+              <p className="text-right text-xs">{notes?.length ?? 0}/255</p>
               {errors.notes && (
                 <p className="mt-1 text-xs text-red-600">{errors.notes.message}</p>
               )}

@@ -172,17 +172,13 @@ func ValidatePOFields(poNumber string, status string) error {
 }
 
 // ValidatePOCreateFields - Validate fields required when creating a purchase order
-func ValidatePOCreateFields(poNumber string, title string, totalAmount float64, status string) error {
+func ValidatePOCreateFields(poNumber string, status string) error {
 	if err := ValidatePOFields(poNumber, status); err != nil {
 		return err
 	}
 
-	if title == "" {
-		return fmt.Errorf("title is required")
-	}
-
-	if totalAmount <= 0 {
-		return fmt.Errorf("total_amount is required and must be greater than 0")
+	if len(poNumber) > 50 {
+		return fmt.Errorf("po_number must be at most 50 characters")
 	}
 
 	return nil

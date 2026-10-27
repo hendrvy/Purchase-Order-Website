@@ -205,12 +205,37 @@ func CreatePurchaseOrder(c *gin.Context) {
 		return
 	}
 
-	// Validate required fields
-	if err := ValidatePOCreateFields(reqpo.PONumber, reqpo.Title, reqpo.TotalAmount, reqpo.Status); err != nil {
+	reqpo.PONumber = strings.TrimSpace(reqpo.PONumber)
+	reqpo.Notes = strings.TrimSpace(reqpo.Notes)
+
+	// Validate required fields (only po_number is required; title and
+	// total_amount are no longer collected when creating a PO)
+	if err := ValidatePOCreateFields(reqpo.PONumber, reqpo.Status); err != nil {
 		c.JSON(http.StatusBadRequest, JsonResponse{
 			Status:  http.StatusBadRequest,
 			Error:   err.Error(),
 			Message: "Invalid po fields",
+		})
+		return
+	}
+
+	// po_number is UNIQUE in the DB, and the constraint also covers
+	// soft-deleted (cancelled) POs, so check unscoped to give a clear error
+	// instead of a raw constraint violation.
+	var existing int64
+	if err := DB.Unscoped().Model(&PurchaseOrder{}).Where("po_number = ?", reqpo.PONumber).Count(&existing).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, JsonResponse{
+			Status:  http.StatusInternalServerError,
+			Error:   err.Error(),
+			Message: "Failed to check po_number",
+		})
+		return
+	}
+	if existing > 0 {
+		c.JSON(http.StatusConflict, JsonResponse{
+			Status:  http.StatusConflict,
+			Error:   "po_number already exists",
+			Message: "No. PO sudah digunakan",
 		})
 		return
 	}

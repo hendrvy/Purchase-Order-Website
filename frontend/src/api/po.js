@@ -13,7 +13,7 @@ import { MOCK_COMPANIES } from '@/mocks/companies.js'
  * Set VITE_USE_MOCKS=true in .env to develop against the in-memory mock
  * PO list in src/mocks/po.js without a running backend. Defaults to false
  * (real API) now that backend/api/purchase_order_handlers.go
- * CreatePurchaseOrder supports title/total_amount and multiple file
+ * CreatePurchaseOrder supports po_number/notes and multiple file
  * attachments.
  *
  * @returns {boolean}
@@ -54,10 +54,10 @@ function buildMockAttachments(files) {
 async function mockCreatePurchaseOrder(input) {
   await delay(700)
 
-  if (!input.title?.trim()) {
-    throw new ApiError('Judul purchase order wajib diisi.', {
+  if (!input.po_number?.trim()) {
+    throw new ApiError('No. PO wajib diisi.', {
       status: 422,
-      errors: { title: 'Judul wajib diisi.' },
+      errors: { po_number: 'No. PO wajib diisi.' },
     })
   }
 
@@ -75,10 +75,10 @@ async function mockCreatePurchaseOrder(input) {
   /** @type {PurchaseOrder} */
   const newOrder = {
     id: 1000 + sequence,
-    po_number: `PO-${new Date().getFullYear()}-${String(1000 + sequence).padStart(4, '0')}`,
+    po_number: input.po_number.trim(),
     company_id: user?.id ?? 0,
-    title: input.title.trim(),
-    total_amount: input.total_amount,
+    title: '',
+    total_amount: 0,
     notes: input.notes?.trim() || '',
     resi_number: '',
     status: 'verifying',
@@ -100,8 +100,7 @@ async function mockCreatePurchaseOrder(input) {
  * plus one or more files under the `files` field (see
  * backend/api/purchase_order_handlers.go CreatePurchaseOrder).
  *
- * `po_number` is generated client-side for now since the backend has no
- * auto-numbering endpoint yet.
+ * `po_number` is entered by the user; the backend rejects duplicates.
  *
  * @param {CreatePOInput} input
  * @returns {Promise<PurchaseOrder>}
@@ -114,10 +113,8 @@ export async function createPurchaseOrder(input) {
   const user = getStoredUser()
 
   const payload = {
-    po_number: input.po_number ?? `PO-${Date.now()}`,
+    po_number: input.po_number.trim(),
     company_id: user?.id,
-    title: input.title,
-    total_amount: input.total_amount,
     notes: input.notes ?? '',
   }
 

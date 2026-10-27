@@ -47,8 +47,6 @@ export const TERMINAL_PO_STATUSES = ['complete', 'rejected']
 /**
  * @typedef {Object} CreatePOInput
  * @property {string} po_number
- * @property {string} title
- * @property {number} total_amount
  * @property {string} [notes]
  * @property {File[]} attachments - Images and/or PDFs supporting the request.
  */
