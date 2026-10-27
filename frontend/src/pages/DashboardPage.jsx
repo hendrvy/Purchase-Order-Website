@@ -1,6 +1,5 @@
 import { useAuth } from '@/context/AuthContext.jsx'
-import { usePurchaseOrdersQuery } from '@/hooks/usePurchaseOrdersQuery.js'
-import { useCompaniesQuery } from '@/hooks/useCompaniesQuery.js'
+import { useDashboardSummaryQuery } from '@/hooks/useDashboardSummaryQuery.js'
 import { SummaryCards } from '@/components/dashboard/SummaryCards.jsx'
 import { UserRoleSummaryCards } from '@/components/dashboard/UserRoleSummaryCards.jsx'
 import { StatusDistributionChart } from '@/components/dashboard/StatusDistributionChart.jsx'
@@ -10,8 +9,9 @@ import { isAdminLikeRole } from '@/types/role.js'
 export function DashboardPage() {
   const { user } = useAuth()
   const isAdmin = isAdminLikeRole(user?.role)
-  const { data: orders = [], isLoading, isError, error } = usePurchaseOrdersQuery()
-  const { data: companies = [] } = useCompaniesQuery(undefined, { enabled: isAdmin })
+  const { data: summary, isLoading, isError, error } = useDashboardSummaryQuery()
+
+  const poSummary = summary?.purchase_orders
 
   return (
     <section className="space-y-6">
@@ -30,12 +30,12 @@ export function DashboardPage() {
         </p>
       )}
 
-      {!isLoading && !isError && (
+      {!isLoading && !isError && poSummary && (
         <>
-          {isAdmin && (
+          {isAdmin && summary.accounts && (
             <div className="space-y-3">
               <h2 className="text-sm font-semibold text-gray-700">Informasi Akun</h2>
-              <UserRoleSummaryCards companies={companies} />
+              <UserRoleSummaryCards summary={summary.accounts} />
             </div>
           )}
 
@@ -46,12 +46,12 @@ export function DashboardPage() {
             <h2 className="text-sm font-semibold text-gray-700">
               Informasi PO
             </h2>
-            <SummaryCards orders={orders} />
+            <SummaryCards summary={poSummary} />
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">
-            <StatusDistributionChart orders={orders} />
-            <RecentOrdersCard orders={orders} />
+            <StatusDistributionChart counts={poSummary.counts_by_status} />
+            <RecentOrdersCard orders={poSummary.recent_orders} />
           </div>
         </>
       )}

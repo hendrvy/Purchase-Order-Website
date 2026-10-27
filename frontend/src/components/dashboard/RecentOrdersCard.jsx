@@ -9,12 +9,15 @@ import { formatCurrency, formatRelativeTime } from '@/lib/format.js'
  */
 
 /**
+ * Newest-first list of the most recently updated purchase orders. The order
+ * comes from the server (see GetDashboardSummaryDB in
+ * backend/api/database.go), so there is no sort control here - sorting a
+ * five-row preview client-side would be misleading anyway.
+ *
  * @param {{ orders: PurchaseOrder[], limit?: number }} props
  */
 export function RecentOrdersCard({ orders, limit = 5 }) {
-  const recentOrders = [...orders]
-    .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
-    .slice(0, limit)
+  const recentOrders = orders.slice(0, limit)
 
   return (
     <Card>

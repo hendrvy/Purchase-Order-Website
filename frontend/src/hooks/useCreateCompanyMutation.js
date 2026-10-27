@@ -17,6 +17,7 @@ export function useCreateCompanyMutation() {
     mutationFn: (input) => createCompany(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['companies'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] })
     },
   })
 }

@@ -18,6 +18,7 @@ export function useUpdatePOStatusMutation() {
     mutationFn: ({ id, ...input }) => updatePurchaseOrderStatus(id, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-orders'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] })
     },
   })
 }

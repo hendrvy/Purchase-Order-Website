@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { getCompanies } from '@/api/companies.js'
 
 /**
@@ -6,17 +6,19 @@ import { getCompanies } from '@/api/companies.js'
  */
 
 /**
- * Admin-only: fetches the list of all companies/users, optionally filtered
- * by role and/or a search term (see backend/api/admin_handlers.go
- * AdminListCompanies).
+ * Admin-only: fetches a page of companies/users, filtered by role and/or
+ * search and sorted/paginated server-side (see
+ * backend/api/admin_handlers.go AdminListCompanies). Keeps the previous page
+ * visible while the next one loads.
  *
- * @param {{ role?: Role | 'all', search?: string }} [filters]
+ * @param {{ role?: Role | 'all', search?: string, page?: number, limit?: number, sort?: string, order?: 'asc' | 'desc' }} [filters]
  * @param {{ enabled?: boolean }} [options] - e.g. `{ enabled: isAdmin }` to skip the request for non-admins.
  */
 export function useCompaniesQuery(filters = {}, options = {}) {
   return useQuery({
     queryKey: ['companies', filters],
     queryFn: () => getCompanies(filters),
+    placeholderData: keepPreviousData,
     ...options,
   })
 }

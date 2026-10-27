@@ -5,24 +5,88 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
-// GetPurchaseOrders - Get all purchase orders (with role-based filtering)
+// parseDateRange - Parse the optional ?date_from= / ?date_to= (YYYY-MM-DD)
+// date-modified range filters. Missing values come back as nil.
+func parseDateRange(c *gin.Context) (*time.Time, *time.Time, error) {
+	parse := func(key string) (*time.Time, error) {
+		raw := strings.TrimSpace(c.Query(key))
+		if raw == "" {
+			return nil, nil
+		}
+		parsed, err := time.ParseInLocation("2006-01-02", raw, time.Local)
+		if err != nil {
+			return nil, fmt.Errorf("%s must be in YYYY-MM-DD format", key)
+		}
+		return &parsed, nil
+	}
+
+	from, err := parse("date_from")
+	if err != nil {
+		return nil, nil, err
+	}
+	to, err := parse("date_to")
+	if err != nil {
+		return nil, nil, err
+	}
+	return from, to, nil
+}
+
+// GetPurchaseOrders - List purchase orders (paginated + sorted), with
+// role-based scoping: a `user` only sees their own company's POs, while
+// validator/admin see all. Supports ?status=, ?search=, and ?date_from=/
+// ?date_to= (updated_at range) filters plus ?sort=/?order= (whitelisted in
+// database.go).
 func GetPurchaseOrders(c *gin.Context) {
 	userRole := c.GetString("role")
+	userID := c.GetUint("user_id")
 
-	if userRole == "user" {
-		GetPurchaseOrdersByCompany(c)
+	page, limit := parsePagination(c)
+
+	sortColumn, direction, err := parseSort(c, PurchaseOrderSortColumns, "purchase_orders.updated_at", "desc")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, JsonResponse{
+			Status:  http.StatusBadRequest,
+			Message: "Invalid sort parameters",
+			Error:   err.Error(),
+		})
 		return
 	}
 
-	page := queryInt(c, "page", 1)
-	limit := queryInt(c, "limit", 10)
+	status := strings.TrimSpace(c.Query("status"))
+	if status != "" && !IsValidPOStatus(status) {
+		c.JSON(http.StatusBadRequest, JsonResponse{
+			Status:  http.StatusBadRequest,
+			Message: "Invalid status filter",
+			Error:   "status must be one of: " + strings.Join(ValidPOStatuses, ", "),
+		})
+		return
+	}
 
-	purchaseOrders, err := GetAllPurchaseOrdersDB(page, limit)
+	search := strings.TrimSpace(c.Query("search"))
 
+	dateFrom, dateTo, err := parseDateRange(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, JsonResponse{
+			Status:  http.StatusBadRequest,
+			Message: "Invalid date filter",
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	// A plain `user` is scoped to their own company; everyone else sees all.
+	var companyID *uint
+	if userRole == "user" {
+		companyID = &userID
+	}
+
+	purchaseOrders, total, err := GetPurchaseOrdersDB(companyID, page, limit, sortColumn, direction, status, search, dateFrom, dateTo)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, JsonResponse{
 			Status:  http.StatusInternalServerError,
@@ -35,7 +99,10 @@ func GetPurchaseOrders(c *gin.Context) {
 	c.JSON(http.StatusOK, JsonResponse{
 		Status:  http.StatusOK,
 		Message: "Retrieved purchase orders",
-		Data:    purchaseOrders,
+		Data: PaginatedData{
+			Items: purchaseOrders,
+			Meta:  buildMeta(page, limit, total),
+		},
 	})
 }
 
@@ -437,7 +504,9 @@ func UpdatePurchaseOrderStatus(c *gin.Context) {
 	})
 }
 
-// GetPurchaseOrdersByCompany - Get all purchase orders for a specific company
+// GetPurchaseOrdersByCompany - List a specific company's purchase orders
+// (paginated + sorted). A plain `user` may only request their own company;
+// validator/admin may request any.
 func GetPurchaseOrdersByCompany(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	userRole := c.GetString("role")
@@ -458,8 +527,41 @@ func GetPurchaseOrdersByCompany(c *gin.Context) {
 		return
 	}
 
-	PurchaseOrders, err := GetPurchaseOrdersByCompanyDB(companyID)
+	page, limit := parsePagination(c)
 
+	sortColumn, direction, err := parseSort(c, PurchaseOrderSortColumns, "purchase_orders.updated_at", "desc")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, JsonResponse{
+			Status:  http.StatusBadRequest,
+			Message: "Invalid sort parameters",
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	status := strings.TrimSpace(c.Query("status"))
+	if status != "" && !IsValidPOStatus(status) {
+		c.JSON(http.StatusBadRequest, JsonResponse{
+			Status:  http.StatusBadRequest,
+			Message: "Invalid status filter",
+			Error:   "status must be one of: " + strings.Join(ValidPOStatuses, ", "),
+		})
+		return
+	}
+
+	search := strings.TrimSpace(c.Query("search"))
+
+	dateFrom, dateTo, err := parseDateRange(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, JsonResponse{
+			Status:  http.StatusBadRequest,
+			Message: "Invalid date filter",
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	purchaseOrders, total, err := GetPurchaseOrdersDB(&companyID, page, limit, sortColumn, direction, status, search, dateFrom, dateTo)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, JsonResponse{
 			Status:  http.StatusInternalServerError,
@@ -472,6 +574,40 @@ func GetPurchaseOrdersByCompany(c *gin.Context) {
 	c.JSON(http.StatusOK, JsonResponse{
 		Status:  http.StatusOK,
 		Message: "Success retrieving data",
-		Data:    PurchaseOrders,
+		Data: PaginatedData{
+			Items: purchaseOrders,
+			Meta:  buildMeta(page, limit, total),
+		},
+	})
+}
+
+// GetDashboardSummary - Single aggregate payload for the dashboard: PO
+// counts/totals + the recent orders, plus per-role account counts for
+// admins. A plain `user` is scoped to their own company's POs.
+func GetDashboardSummary(c *gin.Context) {
+	userRole := c.GetString("role")
+	userID := c.GetUint("user_id")
+
+	var companyID *uint
+	if userRole == "user" {
+		companyID = &userID
+	}
+
+	includeAccounts := userRole == string(RoleAdmin) || userRole == string(RoleSuperAdmin)
+
+	summary, err := GetDashboardSummaryDB(companyID, includeAccounts)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, JsonResponse{
+			Status:  http.StatusInternalServerError,
+			Message: "Failed to retrieve dashboard summary",
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, JsonResponse{
+		Status:  http.StatusOK,
+		Message: "Retrieved dashboard summary",
+		Data:    summary,
 	})
 }

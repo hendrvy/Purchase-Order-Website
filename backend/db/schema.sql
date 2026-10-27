@@ -32,6 +32,9 @@ CREATE INDEX IF NOT EXISTS idx_companies_username ON companies(username) WHERE d
 -- Index for fast lookups by email
 CREATE INDEX IF NOT EXISTS idx_companies_email ON companies(email) WHERE deleted_at IS NULL;
 
+-- Index backing the default sort of the User Management list (created_at DESC)
+CREATE INDEX IF NOT EXISTS idx_companies_created_at ON companies(created_at DESC) WHERE deleted_at IS NULL;
+
 -- ============================================================================
 -- ATTACHMENTS TABLE
 -- ============================================================================
@@ -85,6 +88,9 @@ CREATE INDEX IF NOT EXISTS idx_purchase_orders_status ON purchase_orders(status)
 
 -- Composite index for common query: find POs for a specific company with a specific status
 CREATE INDEX IF NOT EXISTS idx_purchase_orders_company_status ON purchase_orders(company_id, status) WHERE deleted_at IS NULL;
+
+-- Index backing the default sort of the History list (updated_at DESC)
+CREATE INDEX IF NOT EXISTS idx_purchase_orders_updated_at ON purchase_orders(updated_at DESC) WHERE deleted_at IS NULL;
 
 -- ============================================================================
 -- PURCHASE_ORDER_ATTACHMENTS TABLE (many-to-many join table)

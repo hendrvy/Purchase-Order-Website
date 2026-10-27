@@ -6,30 +6,18 @@ import { PO_STATUSES } from '@/types/po.js'
 import { getStatusConfig } from '@/lib/status.js'
 
 /**
- * @import { PurchaseOrder } from '@/types/po.js'
- */
-
-/**
- * Builds recharts data + shadcn chart config from a list of purchase
- * orders, counting how many fall into each PO_STATUSES bucket. Colors are
- * pulled from getStatusConfig() so this chart stays visually consistent
- * with the status badges used elsewhere (e.g. history table).
+ * Builds recharts data + shadcn chart config from a per-status count map
+ * (computed server-side - see GetDashboardSummaryDB). Colors are pulled from
+ * getStatusConfig() so this chart stays visually consistent with the status
+ * badges used elsewhere (e.g. history table).
  *
- * @param {PurchaseOrder[]} orders
+ * @param {Record<string, number>} [countsByStatus]
  */
-function buildChartData(orders) {
-  const counts = Object.fromEntries(PO_STATUSES.map((status) => [status, 0]))
-
-  for (const order of orders) {
-    if (order.status in counts) {
-      counts[order.status] += 1
-    }
-  }
-
+function buildChartData(countsByStatus = {}) {
   const data = PO_STATUSES.map((status) => ({
     status,
     label: getStatusConfig(status).label,
-    count: counts[status],
+    count: countsByStatus[status] ?? 0,
   }))
 
   const config = Object.fromEntries(
@@ -47,21 +35,41 @@ function buildChartData(orders) {
 
 /**
  * Bar chart showing how many purchase orders fall into each status
- * (draft, verification, processing, shipping, completed, rejected,
- * cancelled). Helps spot bottlenecks at a glance on the dashboard.
- * Clicking a bar navigates to the History page pre-filtered to that
- * status (see HistoryOrderPage.jsx, which reads the same `?status=`
- * query param back out via useSearchParams).
+ * (verifying, process, shipping, complete, rejected). Helps spot bottlenecks
+ * at a glance on the dashboard. Clicking a bar navigates to the History page
+ * pre-filtered to that status (see HistoryOrderPage.jsx, which reads the
+ * same `?status=` query param back out via useSearchParams).
  *
- * @param {{ orders: PurchaseOrder[] }} props
+ * @param {{ counts: Record<string, number> }} props
  */
-export function StatusDistributionChart({ orders }) {
+export function StatusDistributionChart({ counts }) {
   const navigate = useNavigate()
-  const { data, config } = buildChartData(orders)
+  const { data, config } = buildChartData(counts)
 
   function handleBarClick(entry) {
     if (!entry?.status) return
     navigate(`/history?status=${entry.status}`)
+  }
+
+  /**
+   * Custom background shape for each bar column. Covers the full chart
+   * height so the entire hover-highlighted region is clickable, not just
+   * the bar rectangle itself. Recharts passes the full data entry (including
+   * `status`) as props here, so navigation works correctly for every column.
+   */
+  function ClickableBackground(props) {
+    const { x, y, width, height, status } = props
+    return (
+      <rect
+        x={x}
+        y={y}
+        width={width}
+        height={height}
+        fill="transparent"
+        style={{ cursor: 'pointer' }}
+        onClick={() => handleBarClick({ status })}
+      />
+    )
   }
 
   return (
@@ -85,20 +93,12 @@ export function StatusDistributionChart({ orders }) {
             />
             <YAxis tickLine={false} axisLine={false} allowDecimals={false} width={28} />
             <ChartTooltip content={<ChartTooltipContent nameKey="status" />} />
-            {/* `cursor="pointer"` is recharts' prop for the bar's hover
-                cursor (not a CSS class) - without it the bar doesn't
-                visually hint that it's clickable.
-                `background` renders a full-column-height invisible
-                rectangle behind the bar (recharts' built-in way to do
-                this) that receives the same onClick - without it, a
-                status with a tiny/zero count only has a few px of bar to
-                click, instead of the full column like the rest. */}
             <Bar
               dataKey="count"
               radius={[4, 4, 0, 0]}
               cursor="pointer"
               onClick={handleBarClick}
-              background={{ fill: 'transparent', onClick: handleBarClick, cursor: 'pointer' }}
+              background={<ClickableBackground />}
             >
               {data.map((entry) => (
                 <Cell key={entry.status} fill={`var(--color-status-${entry.status}-chart)`} />

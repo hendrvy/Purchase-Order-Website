@@ -18,6 +18,7 @@ export function useDeletePOMutation() {
     mutationFn: (id) => deletePurchaseOrder(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-orders'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] })
     },
   })
 }

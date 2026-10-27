@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { getStoredToken } from '@/lib/storage.js'
+import { clearAuthStorage, getStoredToken } from '@/lib/storage.js'
 
 /**
  * Thrown for any failed API call so UI code can rely on a single,
@@ -46,6 +46,13 @@ apiClient.interceptors.response.use(
     if (error.response) {
       const { status, data } = error.response
       const message = data?.message ?? data?.error ?? 'Terjadi kesalahan pada server.'
+
+      const isPublicEndpoint = error.config?.url === '/api/login'
+      if (status === 401 && !isPublicEndpoint) {
+        clearAuthStorage()
+        window.location.href = '/login'
+      }
+
       return Promise.reject(new ApiError(message, { status, errors: data?.errors }))
     }
     if (error.request) {
@@ -56,3 +63,28 @@ apiClient.interceptors.response.use(
     return Promise.reject(new ApiError(error.message ?? 'Terjadi kesalahan tak terduga.'))
   },
 )
+
+/** Fallback meta used when a paginated response is missing/empty. */
+export const EMPTY_PAGINATION_META = {
+  page: 1,
+  page_size: 10,
+  total: 0,
+  total_pages: 0,
+}
+
+/**
+ * Unwraps the `{ items, meta }` payload shared by every paginated list
+ * endpoint (see backend/api/pagination.go). Keeps callers from having to
+ * guard against a missing `data`/`meta` on every render.
+ *
+ * @template T
+ * @param {import('axios').AxiosResponse<{ data?: { items?: T[], meta?: object } }>} response
+ * @returns {{ items: T[], meta: import('@/types/api.js').PaginationMeta }}
+ */
+export function unwrapPaginated(response) {
+  const payload = response.data?.data
+  return {
+    items: payload?.items ?? [],
+    meta: payload?.meta ?? { ...EMPTY_PAGINATION_META },
+  }
+}

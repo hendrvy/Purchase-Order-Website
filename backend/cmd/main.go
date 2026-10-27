@@ -53,6 +53,13 @@ func main() {
 	protected.GET("/purchase-orders/company/:company_id", api.GetPurchaseOrdersByCompany)
 
 	// ========================================================================
+	// Dashboard Summary Route
+	// ========================================================================
+	// Kept out of the /purchase-orders prefix so it can't collide with the
+	// /purchase-orders/:id wildcard route.
+	protected.GET("/summary/dashboard", api.GetDashboardSummary)
+
+	// ========================================================================
 	// File Upload/Download Routes
 	// ========================================================================
 	protected.POST("/upload", api.UploadFile)
