@@ -10,8 +10,6 @@ RUN go mod download
 # Copy source
 COPY backend/api/ ./api/
 COPY backend/cmd/ ./cmd/
-# SQL schema + migrations (di-embed ke binary lewat go:embed)
-COPY backend/db/ ./db/
 
 # Build binary, CGO disabled agar binary static (cocok untuk alpine)
 RUN CGO_ENABLED=0 GOOS=linux go build -o server ./cmd

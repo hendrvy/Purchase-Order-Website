@@ -19,13 +19,8 @@ func main() {
 	// Setup middleware
 	router.Use(api.CORSMiddleware())
 
-	db := api.DBConnect()
-	if db != nil {
+	if db := api.DBConnect(); db != nil {
 		fmt.Printf("Successfully Connected to PostgreSQL Database\n")
-	}
-
-	if err := api.RunMigrations(db); err != nil {
-		log.Fatalf("Database migration failed: %v", err)
 	}
 
 	// ========================================================================
