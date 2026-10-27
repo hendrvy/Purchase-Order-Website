@@ -7,7 +7,8 @@
  * exactly (backend/api/utils.go ValidatePOFields / db/schema.sql CHECK
  * constraint) - there is no draft/cancelled state on the backend today.
  *
- * verifying -> submitted, waiting for validator/admin review
+ * submitted -> newly created by the buyer, waiting for validator/admin
+ * verifying -> being verified by the validator/admin
  * process   -> approved, being processed/fulfilled
  * shipping  -> goods are in transit
  * complete  -> fulfilled and closed successfully
@@ -16,11 +17,33 @@
  * NOTE: this is the canonical status vocabulary for the frontend, matching
  * the color tokens already defined in src/index.css (--color-status-*).
  *
- * @typedef {'verifying' | 'process' | 'shipping' | 'complete' | 'rejected'} POStatus
+ * @typedef {'submitted' | 'verifying' | 'process' | 'shipping' | 'complete' | 'rejected'} POStatus
  */
 
 /** @type {readonly POStatus[]} */
-export const PO_STATUSES = ['verifying', 'process', 'shipping', 'complete', 'rejected']
+export const PO_STATUSES = ['submitted', 'verifying', 'process', 'shipping', 'complete', 'rejected']
+
+/**
+ * One entry of a PO's note thread (backend `PONote`). Top-level entries
+ * (parent_id == null) are written by validator/admin on a status change;
+ * replies are written by the buyer (or staff). A note written on
+ * shipping -> complete carries the proof photo.
+ *
+ * @typedef {Object} PONote
+ * @property {number} id
+ * @property {number} purchase_order_id
+ * @property {number | null} parent_id
+ * @property {number} company_id
+ * @property {{ id: number, company_name: string, username: string, role: string } | null} [author]
+ * @property {string} author_role
+ * @property {string} message
+ * @property {POStatus} [status_from]
+ * @property {POStatus} [status_to]
+ * @property {'resi' | 'pickup'} [proof_type]
+ * @property {number} [attachment_id]
+ * @property {Attachment} [attachment]
+ * @property {string} created_at
+ */
 
 /** Statuses considered "final" - no further transitions are allowed from them. */
 /** @type {readonly POStatus[]} */

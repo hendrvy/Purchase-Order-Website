@@ -9,6 +9,9 @@
 @theme {
   --font-sans: "Kantumruy Pro", ui-sans-serif, system-ui, sans-serif;
 
+  --color-status-submitted: #475569;
+  --color-status-submitted-bg: #e2e8f0;
+
   --color-status-verifying: #2563eb;
   --color-status-verifying-bg: #dbeafe;
 
@@ -32,6 +35,7 @@
    so Tailwind's @theme tree-shaking would otherwise strip them out of the
    build since it can't detect that usage by scanning for class names. */
 :root {
+  --color-status-submitted-chart: #a3b1c4;
   --color-status-verifying-chart: #70a4df;
   --color-status-process-chart: #fdce35;
   --color-status-shipping-chart: #a794f5;

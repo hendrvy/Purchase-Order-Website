@@ -369,8 +369,8 @@ func UpdatePurchaseOrder(c *gin.Context) {
 }
 
 // DeletePurchaseOrder - Delete (soft delete) purchase order. A plain
-// `user` may only cancel their own PO while it's still in "verifying"
-// status - once a validator/admin has started processing it (process/
+// `user` may only cancel their own PO while it's still in "submitted"
+// status - once a validator/admin has picked it up (verifying/process/
 // shipping/complete/rejected), the user can no longer delete it.
 // Validator/admin are not restricted by status here (existing behavior).
 func DeletePurchaseOrder(c *gin.Context) {
@@ -410,11 +410,11 @@ func DeletePurchaseOrder(c *gin.Context) {
 			return
 		}
 
-		if purchaseOrder.Status != "verifying" {
+		if purchaseOrder.Status != "submitted" {
 			c.JSON(http.StatusForbidden, JsonResponse{
 				Status:  http.StatusForbidden,
 				Error:   "Access denied",
-				Message: "Only purchase orders still in 'verifying' status can be cancelled",
+				Message: "Only purchase orders still in 'submitted' status can be cancelled",
 			})
 			return
 		}
@@ -463,17 +463,16 @@ func UpdatePurchaseOrderStatus(c *gin.Context) {
 		return
 	}
 
-	var poReq PurchaseOrder
-	if err := c.BindJSON(&poReq); err != nil {
-		c.JSON(http.StatusBadRequest, JsonResponse{
-			Status:  http.StatusBadRequest,
-			Message: "Invalid request format",
-			Error:   err.Error(),
-		})
-		return
-	}
+	// The request is a form (multipart when a proof file is attached):
+	//   status      - target status (required)
+	//   message     - optional note for the thread
+	//   proof_type  - "resi" | "pickup", required for shipping -> complete
+	//   proof       - proof photo, required for shipping -> complete
+	newStatus := strings.TrimSpace(c.PostForm("status"))
+	message := strings.TrimSpace(c.PostForm("message"))
+	proofType := strings.TrimSpace(c.PostForm("proof_type"))
 
-	if poReq.Status == "" {
+	if newStatus == "" {
 		c.JSON(http.StatusBadRequest, JsonResponse{
 			Status:  http.StatusBadRequest,
 			Message: "Invalid request format",
@@ -482,12 +481,20 @@ func UpdatePurchaseOrderStatus(c *gin.Context) {
 		return
 	}
 
-	// Shipping requires a resi (tracking) number.
-	if poReq.Status == "shipping" && poReq.ResiNumber == "" {
+	if !IsValidPOStatus(newStatus) {
 		c.JSON(http.StatusBadRequest, JsonResponse{
 			Status:  http.StatusBadRequest,
 			Message: "Invalid request format",
-			Error:   "resi_number is required when moving a purchase order to 'shipping'",
+			Error:   "status must be one of: " + strings.Join(ValidPOStatuses, ", "),
+		})
+		return
+	}
+
+	if len([]rune(message)) > MaxNoteLength {
+		c.JSON(http.StatusBadRequest, JsonResponse{
+			Status:  http.StatusBadRequest,
+			Message: "Invalid request format",
+			Error:   fmt.Sprintf("message must be at most %d characters", MaxNoteLength),
 		})
 		return
 	}
@@ -502,7 +509,7 @@ func UpdatePurchaseOrderStatus(c *gin.Context) {
 		return
 	}
 
-	if err := ValidateStatusTransition(existingPO.Status, poReq.Status); err != nil {
+	if err := ValidateStatusTransition(existingPO.Status, newStatus); err != nil {
 		c.JSON(http.StatusBadRequest, JsonResponse{
 			Status:  http.StatusBadRequest,
 			Error:   err.Error(),
@@ -511,11 +518,40 @@ func UpdatePurchaseOrderStatus(c *gin.Context) {
 		return
 	}
 
-	if err := UpdatePurchaseOrderDB(poID, &poReq); err != nil {
-		c.JSON(http.StatusNotFound, JsonResponse{
-			Status:  http.StatusNotFound,
+	// shipping -> complete needs a proof photo: either the issued resi
+	// or proof the goods were picked up directly from the warehouse.
+	var proof *Attachment
+	var proofPath string
+	if newStatus == "complete" {
+		if !isValidProofType(proofType) {
+			c.JSON(http.StatusBadRequest, JsonResponse{
+				Status:  http.StatusBadRequest,
+				Message: "Invalid request format",
+				Error:   "proof_type must be 'resi' or 'pickup' when moving a purchase order to 'complete'",
+			})
+			return
+		}
+
+		var err error
+		proof, proofPath, err = saveProofFile(c)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, JsonResponse{
+				Status:  http.StatusBadRequest,
+				Error:   err.Error(),
+				Message: "Invalid proof file",
+			})
+			return
+		}
+	} else {
+		proofType = ""
+	}
+
+	if err := changeStatusWithNote(existingPO, newStatus, message, proofType, proof, c.GetUint("user_id"), userRole); err != nil {
+		removeFiles(proofPath)
+		c.JSON(http.StatusInternalServerError, JsonResponse{
+			Status:  http.StatusInternalServerError,
 			Error:   err.Error(),
-			Message: "Purchase order not found",
+			Message: "Failed to update purchase order status",
 		})
 		return
 	}

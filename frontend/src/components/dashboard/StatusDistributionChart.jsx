@@ -35,7 +35,7 @@ function buildChartData(countsByStatus = {}) {
 
 /**
  * Bar chart showing how many purchase orders fall into each status
- * (verifying, process, shipping, complete, rejected). Helps spot bottlenecks
+ * (submitted, verifying, process, shipping, complete, rejected). Helps spot bottlenecks
  * at a glance on the dashboard. Clicking a bar navigates to the History page
  * pre-filtered to that status (see HistoryOrderPage.jsx, which reads the
  * same `?status=` query param back out via useSearchParams).

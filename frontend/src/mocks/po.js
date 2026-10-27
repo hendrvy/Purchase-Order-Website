@@ -58,7 +58,7 @@ export const MOCK_PURCHASE_ORDERS = [
     title: 'ATK Kantor Bulan September',
     total_amount: 2500000,
     notes: '',
-    status: 'verifying',
+    status: 'submitted',
     resi_number: '',
     attachments: buildDummyAttachments(1001, 2),
     created_at: '2026-09-18T02:00:00.000Z',

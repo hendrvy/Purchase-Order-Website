@@ -83,8 +83,8 @@ func buildPurchaseOrdersQuery(companyID *uint, status, search string, dateFrom, 
 	if search != "" {
 		like := "%" + search + "%"
 		query = query.Where(
-			"purchase_orders.po_number ILIKE ? OR purchase_orders.title ILIKE ? OR purchase_orders.resi_number ILIKE ? OR c.company_name ILIKE ?",
-			like, like, like, like,
+			"purchase_orders.po_number ILIKE ? OR purchase_orders.title ILIKE ? OR c.company_name ILIKE ?",
+			like, like, like,
 		)
 	}
 

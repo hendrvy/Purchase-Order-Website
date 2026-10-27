@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Trash2 } from 'lucide-react'
+import { MessageSquare, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Card, CardContent } from '@/components/ui/card.jsx'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog.jsx'
@@ -11,6 +11,7 @@ import { useDeletePOMutation } from '@/hooks/useDeletePOMutation.js'
 import { POStatusUpdateControl } from '@/components/history/POStatusUpdateControl.jsx'
 import { AttachmentThumbnailList } from '@/components/history/AttachmentThumbnailList.jsx'
 import { AttachmentPreviewModal } from '@/components/history/AttachmentPreviewModal.jsx'
+import { PODetailModal } from '@/components/history/PODetailModal.jsx'
 import { isAdminLikeRole } from '@/types/role.js'
 
 const SORT_OPTIONS = [
@@ -27,9 +28,9 @@ const SORT_OPTIONS = [
  * Table of purchase orders for the History page. Filtering, sorting, and
  * pagination all happen server-side (see HistoryOrderPage.jsx); this
  * component is presentational - it renders the current page's `orders` and
- * forwards the sort/page controls back up. Includes the shipping resi
- * number and clickable thumbnails for every attachment uploaded with the
- * order (opens a full preview modal on click).
+ * forwards the sort/page controls back up. Includes clickable thumbnails
+ * for every attachment uploaded with the order (opens a full preview modal
+ * on click) and a detail button that opens the PO's note thread.
  *
  * @param {{
  *   orders: PurchaseOrder[],
@@ -55,6 +56,8 @@ export function HistoryTable({
   const [previewAttachment, setPreviewAttachment] = useState(null)
   /** @type {[PurchaseOrder | null, (o: PurchaseOrder | null) => void]} */
   const [pendingDelete, setPendingDelete] = useState(null)
+  const [detailOrderID, setDetailOrderID] = useState(null)
+  const detailOrder = orders.find((item) => item.id === detailOrderID) ?? null
   const deleteMutation = useDeletePOMutation()
 
   // Only validator/admin(-like) see purchase orders across every company
@@ -62,14 +65,14 @@ export function HistoryTable({
   // is only useful - and only populated by the backend - for those roles.
   const showCompanyColumn = user?.role === 'validator' || isAdminLikeRole(user?.role)
 
-  // A `user` can only cancel their own PO while it's still 'verifying' -
-  // once a validator/admin has started processing it, the user can no
-  // longer delete it (mirrors the backend check in
+  // A `user` can only cancel their own PO while it's still 'submitted' -
+  // once a validator/admin has picked it up, the user can no longer
+  // delete it (mirrors the backend check in
   // backend/api/purchase_order_handlers.go DeletePurchaseOrder, which is
   // the actual source of truth/enforcement; this just hides the button
   // for cases we already know would be rejected).
   function canCancel(order) {
-    return user?.role === 'user' && order.company_id === user?.id && order.status === 'verifying'
+    return user?.role === 'user' && order.company_id === user?.id && order.status === 'submitted'
   }
 
   function handleConfirmDelete() {
@@ -161,11 +164,6 @@ export function HistoryTable({
                 )}
 
                 <div className="flex justify-between gap-3 text-xs">
-                  <span className="text-gray-400">No. Resi</span>
-                  <span className="text-right text-gray-700">{order.resi_number || '-'}</span>
-                </div>
-
-                <div className="flex justify-between gap-3 text-xs">
                   <span className="text-gray-400">Total</span>
                   <span className="text-right font-medium text-gray-900">
                     {formatCurrency(order.total_amount)}
@@ -184,6 +182,15 @@ export function HistoryTable({
                     onPreview={setPreviewAttachment}
                   />
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => setDetailOrderID(order.id)}
+                  className="flex items-center justify-center gap-1.5 rounded-md border border-gray-200 py-1.5 text-xs font-medium text-gray-700 transition hover:bg-gray-50 active:bg-gray-100"
+                >
+                  <MessageSquare size={14} />
+                  Detail &amp; Catatan
+                </button>
               </CardContent>
             </Card>
           ))
@@ -220,22 +227,20 @@ export function HistoryTable({
                   reads as the table "jumping". */}
               <table className="w-full table-fixed text-left text-sm">
                 <colgroup>
-                  <col className={showCompanyColumn ? 'w-[11%]' : 'w-[12.5%]'} />
-                  {showCompanyColumn && <col className="w-[12%]" />}
-                  <col className={showCompanyColumn ? 'w-[20%]' : 'w-[23.5%]'} />
-                  <col className={showCompanyColumn ? 'w-[10%]' : 'w-[11.5%]'} />
-                  <col className={showCompanyColumn ? 'w-[9%]' : 'w-[10%]'} />
-                  <col className={showCompanyColumn ? 'w-[10%]' : 'w-[11.5%]'} />
                   <col className={showCompanyColumn ? 'w-[12%]' : 'w-[14%]'} />
-                  <col className={showCompanyColumn ? 'w-[9%]' : 'w-[10%]'} />
-                  <col className="w-[7%]" />
+                  {showCompanyColumn && <col className="w-[14%]" />}
+                  <col className={showCompanyColumn ? 'w-[22%]' : 'w-[26%]'} />
+                  <col className={showCompanyColumn ? 'w-[10%]' : 'w-[12%]'} />
+                  <col className={showCompanyColumn ? 'w-[11%]' : 'w-[13%]'} />
+                  <col className={showCompanyColumn ? 'w-[13%]' : 'w-[16%]'} />
+                  <col className={showCompanyColumn ? 'w-[10%]' : 'w-[10%]'} />
+                  <col className="w-[8%]" />
                 </colgroup>
                 <thead>
                   <tr className="border-b border-gray-100 text-xs font-medium text-gray-500">
                     <th className="px-5 py-3">No. PO</th>
                     {showCompanyColumn && <th className="px-5 py-3">Perusahaan</th>}
                     <th className="px-5 py-3">Judul</th>
-                    <th className="px-5 py-3">No. Resi</th>
                     <th className="px-5 py-3 text-right">Total</th>
                     <th className="px-5 py-3">Status</th>
                     <th className="px-5 py-3">File</th>
@@ -252,7 +257,7 @@ export function HistoryTable({
                           `break-words whitespace-normal` lets it fall onto a
                           second line within the same cell (the row just
                           grows taller, via `align-top` on the <tr>), same
-                          pattern as Perusahaan/Judul/No. Resi/Diperbarui
+                          pattern as Perusahaan/Judul/Diperbarui
                           below. Total still stays single-line/truncated
                           (formatted currency amounts are always short and
                           right-aligned, so truncating reads better than
@@ -262,7 +267,7 @@ export function HistoryTable({
                           {order.po_number}
                         </span>
                       </td>
-                      {/* Perusahaan/Judul/No. Resi/Diperbarui wrap instead of
+                      {/* Perusahaan/Judul/Diperbarui wrap instead of
                           truncating: `whitespace-normal break-words` lets
                           long values fall onto a second line within the
                           same cell (the row just grows taller, via
@@ -282,11 +287,6 @@ export function HistoryTable({
                       <td className="px-5 py-3 text-gray-700">
                         <span className="block w-full break-words whitespace-normal">
                           {order.title}
-                        </span>
-                      </td>
-                      <td className="px-5 py-3 text-gray-700">
-                        <span className="block w-full break-words whitespace-normal">
-                          {order.resi_number || <span className="text-gray-400">-</span>}
                         </span>
                       </td>
                       <td className="overflow-hidden px-5 py-3 text-right text-gray-900">
@@ -311,17 +311,28 @@ export function HistoryTable({
                           {formatDate(order.updated_at)}
                         </span>
                       </td>
-                      <td className="px-5 py-3 text-center">
-                        {canCancel(order) && (
+                      <td className="px-3 py-3">
+                        <div className="flex items-center justify-center gap-1">
                           <button
                             type="button"
-                            onClick={() => setPendingDelete(order)}
-                            aria-label={`Batalkan PO ${order.po_number}`}
-                            className="rounded-md p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-red-600"
+                            onClick={() => setDetailOrderID(order.id)}
+                            aria-label={`Detail dan catatan PO ${order.po_number}`}
+                            title="Detail & catatan"
+                            className="rounded-md p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
                           >
-                            <Trash2 size={16} />
+                            <MessageSquare size={16} />
                           </button>
-                        )}
+                          {canCancel(order) && (
+                            <button
+                              type="button"
+                              onClick={() => setPendingDelete(order)}
+                              aria-label={`Batalkan PO ${order.po_number}`}
+                              className="rounded-md p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-red-600"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -336,6 +347,8 @@ export function HistoryTable({
         attachment={previewAttachment}
         onClose={() => setPreviewAttachment(null)}
       />
+
+      <PODetailModal order={detailOrder} onClose={() => setDetailOrderID(null)} />
 
       {pendingDelete && (
         <ConfirmDialog

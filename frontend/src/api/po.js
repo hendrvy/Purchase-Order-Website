@@ -80,8 +80,7 @@ async function mockCreatePurchaseOrder(input) {
     title: '',
     total_amount: 0,
     notes: input.notes?.trim() || '',
-    resi_number: '',
-    status: 'verifying',
+    status: 'submitted',
     attachments: buildMockAttachments(input.attachments),
     created_at: now,
     updated_at: now,
@@ -204,7 +203,6 @@ function mockQueryPurchaseOrders(options = {}) {
       (order_) =>
         order_.po_number?.toLowerCase().includes(term) ||
         order_.title?.toLowerCase().includes(term) ||
-        order_.resi_number?.toLowerCase().includes(term) ||
         order_.company?.company_name?.toLowerCase().includes(term),
     )
   }
@@ -345,24 +343,40 @@ export async function getDashboardSummary() {
   return response.data.data
 }
 
+/** In-memory note threads for mock mode, keyed by PO id. */
+const MOCK_NOTES = new Map()
+let mockNoteSequence = 1
+
+/**
+ * @param {number} poID
+ * @returns {import('@/types/po.js').PONote[]}
+ */
+function getMockNotes(poID) {
+  if (!MOCK_NOTES.has(poID)) MOCK_NOTES.set(poID, [])
+  return MOCK_NOTES.get(poID)
+}
+
 /**
  * Updates the status of a purchase order. Only callable by validator/admin
  * accounts (enforced server-side, see
  * backend/api/purchase_order_handlers.go UpdatePurchaseOrderStatus).
- * `resi_number` is required by the backend when moving to `shipping`.
+ *
+ * Sent as a multipart form: `status`, optional `message` (note for the
+ * thread), and - only for shipping -> complete - `proof_type` ('resi' |
+ * 'pickup') plus the `proof` photo.
  *
  * @param {number} id
- * @param {{ status: import('@/types/po.js').POStatus, resi_number?: string, notes?: string }} input
+ * @param {{ status: import('@/types/po.js').POStatus, message?: string, proof_type?: 'resi' | 'pickup', proof?: File }} input
  * @returns {Promise<void>}
  */
 export async function updatePurchaseOrderStatus(id, input) {
   if (shouldUseMocks()) {
     await delay(400)
 
-    if (input.status === 'shipping' && !input.resi_number) {
-      throw new ApiError('No. Resi wajib diisi untuk status Shipping.', {
+    if (input.status === 'complete' && (!input.proof_type || !input.proof)) {
+      throw new ApiError('Bukti resi atau pengambilan barang wajib dilampirkan.', {
         status: 400,
-        errors: { resi_number: 'No. Resi wajib diisi.' },
+        errors: { proof: 'Bukti wajib dilampirkan.' },
       })
     }
 
@@ -371,19 +385,90 @@ export async function updatePurchaseOrderStatus(id, input) {
       throw new ApiError('Purchase order tidak ditemukan.', { status: 404 })
     }
 
+    const user = getStoredUser()
+    getMockNotes(id).push({
+      id: mockNoteSequence++,
+      purchase_order_id: id,
+      parent_id: null,
+      company_id: user?.id ?? 0,
+      author: user
+        ? { id: user.id, company_name: user.company_name, username: user.username, role: user.role }
+        : null,
+      author_role: user?.role ?? 'admin',
+      message: input.message?.trim() ?? '',
+      status_from: order.status,
+      status_to: input.status,
+      proof_type: input.proof_type,
+      attachment: input.proof ? buildMockAttachments([input.proof])[0] : undefined,
+      created_at: new Date().toISOString(),
+    })
+
     order.status = input.status
-    if (input.resi_number) order.resi_number = input.resi_number
-    if (input.notes) order.notes = input.notes
     order.updated_at = new Date().toISOString()
     return
   }
 
-  await apiClient.put(`/api/purchase-orders/${id}/status`, input)
+  const formData = new FormData()
+  formData.append('status', input.status)
+  if (input.message?.trim()) formData.append('message', input.message.trim())
+  if (input.proof_type) formData.append('proof_type', input.proof_type)
+  if (input.proof) formData.append('proof', input.proof)
+
+  await apiClient.put(`/api/purchase-orders/${id}/status`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+}
+
+/**
+ * Fetches the note thread of a purchase order, oldest first.
+ *
+ * @param {number} id
+ * @returns {Promise<import('@/types/po.js').PONote[]>}
+ */
+export async function getPurchaseOrderNotes(id) {
+  if (shouldUseMocks()) {
+    await delay(200)
+    return [...getMockNotes(id)]
+  }
+
+  const response = await apiClient.get(`/api/purchase-orders/${id}/notes`)
+  return response.data.data ?? []
+}
+
+/**
+ * Adds a reply to a note thread (buyer replies, or staff follow-ups).
+ *
+ * @param {number} id
+ * @param {{ message: string, parent_id?: number }} input
+ * @returns {Promise<import('@/types/po.js').PONote>}
+ */
+export async function createPurchaseOrderNote(id, input) {
+  if (shouldUseMocks()) {
+    await delay(300)
+    const user = getStoredUser()
+    const note = {
+      id: mockNoteSequence++,
+      purchase_order_id: id,
+      parent_id: input.parent_id ?? null,
+      company_id: user?.id ?? 0,
+      author: user
+        ? { id: user.id, company_name: user.company_name, username: user.username, role: user.role }
+        : null,
+      author_role: user?.role ?? 'user',
+      message: input.message.trim(),
+      created_at: new Date().toISOString(),
+    }
+    getMockNotes(id).push(note)
+    return note
+  }
+
+  const response = await apiClient.post(`/api/purchase-orders/${id}/notes`, input)
+  return response.data.data
 }
 
 /**
  * Cancels (deletes) a purchase order. Only callable by the owning `user`
- * while the PO is still in 'verifying' status - the backend rejects the
+ * while the PO is still in 'submitted' status - the backend rejects the
  * request with 403 otherwise (see
  * backend/api/purchase_order_handlers.go DeletePurchaseOrder).
  *
@@ -398,8 +483,8 @@ export async function deletePurchaseOrder(id) {
     if (!order) {
       throw new ApiError('Purchase order tidak ditemukan.', { status: 404 })
     }
-    if (order.status !== 'verifying') {
-      throw new ApiError("Hanya PO dengan status 'Verifying' yang dapat dibatalkan.", {
+    if (order.status !== 'submitted') {
+      throw new ApiError("Hanya PO dengan status 'Submitted' yang dapat dibatalkan.", {
         status: 403,
       })
     }

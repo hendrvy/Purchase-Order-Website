@@ -4,7 +4,7 @@ import { deletePurchaseOrder } from '@/api/po.js'
 /**
  * Wraps deletePurchaseOrder() in a React Query mutation. Meant to be used
  * by a `user`-role account cancelling their own PO while it's still in
- * 'verifying' status - the backend enforces both the ownership and
+ * 'submitted' status - the backend enforces both the ownership and
  * status checks (see
  * backend/api/purchase_order_handlers.go DeletePurchaseOrder), this hook
  * just surfaces whatever error it returns. Invalidates the PO list so

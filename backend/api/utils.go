@@ -101,6 +101,26 @@ func ValidateImageFile(file *multipart.FileHeader) error {
 	return nil
 }
 
+// ValidateProofFile - Validate a proof-of-delivery photo (resi or pickup
+// proof). Images only, up to MaxFileSize.
+func ValidateProofFile(file *multipart.FileHeader) error {
+	if file == nil {
+		return fmt.Errorf("file is required")
+	}
+
+	if file.Size > MaxFileSize {
+		return fmt.Errorf("file size exceeds %dMB limit. Maximum: %d bytes, Received: %d bytes",
+			MaxFileSize/1024/1024, MaxFileSize, file.Size)
+	}
+
+	ext := strings.ToLower(filepath.Ext(file.Filename))
+	if !isAllowedImageExtension(ext) {
+		return fmt.Errorf("file type '%s' is not allowed. Allowed types: .jpg, .jpeg, .png, .webp", ext)
+	}
+
+	return nil
+}
+
 // GetMimeType - Get MIME type from file extension
 func GetMimeType(filename string) string {
 	ext := strings.ToLower(filepath.Ext(filename))
@@ -144,7 +164,7 @@ func GenerateUniqueFilename(originalFilename string) string {
 
 // ValidPOStatuses - The canonical purchase order status vocabulary,
 // mirroring the DB CHECK constraint in backend/db/schema.sql.
-var ValidPOStatuses = []string{"verifying", "process", "shipping", "complete", "rejected"}
+var ValidPOStatuses = []string{"submitted", "verifying", "process", "shipping", "complete", "rejected"}
 
 // IsValidPOStatus - Check that a status string is one of ValidPOStatuses.
 func IsValidPOStatus(status string) bool {
@@ -165,7 +185,7 @@ func ValidatePOFields(poNumber string, status string) error {
 
 	// Check status (if provided)
 	if status != "" && !IsValidPOStatus(status) {
-		return fmt.Errorf("invalid status '%s'. Allowed values: verifying, process, shipping, complete, rejected", status)
+		return fmt.Errorf("invalid status '%s'. Allowed values: submitted, verifying, process, shipping, complete, rejected", status)
 	}
 
 	return nil
@@ -193,7 +213,8 @@ func ValidatePOCreateFields(poNumber string, status string) error {
 // of truth so status changes can never skip steps even via direct API
 // calls, regardless of what the frontend sends.
 var allowedStatusTransitions = map[string][]string{
-	"verifying": {"process", "rejected"},
+	"submitted": {"verifying", "rejected"},
+	"verifying": {"process"},
 	"process":   {"shipping"},
 	"shipping":  {"complete"},
 	"complete":  {},

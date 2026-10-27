@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card.jsx'
  * @param {Record<string, number>} countsByStatus
  */
 function countNeedsAction(countsByStatus) {
-  return (countsByStatus.verifying ?? 0) + (countsByStatus.rejected ?? 0)
+  return (countsByStatus.submitted ?? 0) + (countsByStatus.verifying ?? 0) + (countsByStatus.rejected ?? 0)
 }
 
 /**

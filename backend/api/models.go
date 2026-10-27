@@ -64,7 +64,7 @@ type PurchaseOrder struct {
 	TotalAmount float64        `json:"total_amount" gorm:"not null;default:0"`
 	ResiNumber  string         `json:"resi_number"`
 	Notes       string         `json:"notes"`
-	Status      string         `json:"status" gorm:"default:verifying"`
+	Status      string         `json:"status" gorm:"default:submitted"`
 	Attachments []Attachment   `json:"attachments,omitempty" gorm:"many2many:purchase_order_attachments;"`
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`
@@ -87,6 +87,29 @@ type PurchaseOrderAttachment struct {
 	AttachmentID    uint      `json:"attachment_id" gorm:"primaryKey"`
 	CreatedAt       time.Time `json:"created_at"`
 }
+
+// PONote - One entry in a purchase order's note thread. A top-level note
+// (ParentID == nil) is written by a validator/admin when they change the
+// PO status (StatusFrom/StatusTo set); replies (ParentID set) can be posted
+// by the buyer or by staff. A note can also carry the proof-of-delivery
+// attachment uploaded on shipping -> complete (ProofType + Attachment).
+type PONote struct {
+	ID              uint        `json:"id" gorm:"primaryKey"`
+	PurchaseOrderID uint        `json:"purchase_order_id" gorm:"not null;index"`
+	ParentID        *uint       `json:"parent_id" gorm:"index"`
+	CompanyID       uint        `json:"company_id" gorm:"not null"`
+	Author          *Company    `json:"author,omitempty" gorm:"foreignKey:CompanyID;references:ID"`
+	AuthorRole      string      `json:"author_role" gorm:"not null"`
+	Message         string      `json:"message"`
+	StatusFrom      string      `json:"status_from,omitempty"`
+	StatusTo        string      `json:"status_to,omitempty"`
+	ProofType       string      `json:"proof_type,omitempty"`
+	AttachmentID    *uint       `json:"attachment_id,omitempty"`
+	Attachment      *Attachment `json:"attachment,omitempty" gorm:"foreignKey:AttachmentID;references:ID"`
+	CreatedAt       time.Time   `json:"created_at"`
+}
+
+func (PONote) TableName() string { return "po_notes" }
 
 type HelloRequest struct {
 	Message string `json:"message" binding:"required"`

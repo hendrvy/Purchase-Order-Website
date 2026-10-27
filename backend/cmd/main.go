@@ -51,6 +51,8 @@ func main() {
 	// ========================================================================
 	protected.PUT("/purchase-orders/:id/status", api.UpdatePurchaseOrderStatus)
 	protected.GET("/purchase-orders/company/:company_id", api.GetPurchaseOrdersByCompany)
+	protected.GET("/purchase-orders/:id/notes", api.GetPurchaseOrderNotes)
+	protected.POST("/purchase-orders/:id/notes", api.CreatePurchaseOrderNote)
 
 	// ========================================================================
 	// Dashboard Summary Route

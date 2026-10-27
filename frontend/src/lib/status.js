@@ -17,6 +17,11 @@
  * @type {Record<POStatus, StatusConfigEntry>}
  */
 export const statusConfig = {
+  submitted: {
+    label: 'Submitted',
+    textClass: 'text-status-submitted',
+    bgClass: 'bg-status-submitted-bg',
+  },
   verifying: {
     label: 'Verifying',
     textClass: 'text-status-verifying',
@@ -62,9 +67,12 @@ export function getStatusConfig(status) {
  * @type {Record<POStatus, Partial<Record<POStatus, readonly Role[]>>>}
  */
 const TRANSITION_RULES = {
+  submitted: {
+    verifying: ['validator', 'admin', 'super_admin'],
+    rejected: ['validator', 'admin', 'super_admin'],
+  },
   verifying: {
     process: ['validator', 'admin', 'super_admin'],
-    rejected: ['validator', 'admin', 'super_admin'],
   },
   process: {
     shipping: ['validator', 'admin', 'super_admin'],
@@ -99,13 +107,19 @@ export function canTransition(status, target, role) {
 }
 
 /**
- * Whether moving a PO to the given target status requires a resi
- * (tracking) number to be supplied. Mirrors the backend check in
+ * Whether moving a PO to the given target status requires a proof photo
+ * (resi or pickup proof). Mirrors the backend check in
  * backend/api/purchase_order_handlers.go UpdatePurchaseOrderStatus.
  *
  * @param {POStatus} targetStatus
  * @returns {boolean}
  */
-export function requiresResiNumber(targetStatus) {
-  return targetStatus === 'shipping'
+export function requiresProof(targetStatus) {
+  return targetStatus === 'complete'
+}
+
+/** @type {Record<'resi' | 'pickup', string>} */
+export const PROOF_TYPE_LABELS = {
+  resi: 'Foto resi yang sudah terbit',
+  pickup: 'Foto bukti pengambilan barang (dari gudang)',
 }
