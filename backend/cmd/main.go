@@ -19,8 +19,14 @@ func main() {
 	// Setup middleware
 	router.Use(api.CORSMiddleware())
 
-	if db := api.DBConnect(); db != nil {
-		fmt.Printf("Successfully Connected to PostgreSQL Database\n")
+	db := api.DBConnect()
+	if db == nil {
+		log.Fatal("database connection failed")
+	}
+	fmt.Printf("Successfully Connected to PostgreSQL Database\n")
+
+	if err := api.RunMigrations(db); err != nil {
+		log.Fatalf("database migration failed: %v", err)
 	}
 
 	// ========================================================================
@@ -70,6 +76,7 @@ func main() {
 	// ========================================================================
 	// Company Routes
 	// ========================================================================
+	protected.GET("/company-options", api.RequireStaff(), api.ListBuyerOptions)
 	protected.GET("/companies/:id", api.GetCompanyByID)
 	protected.PUT("/companies/:id", api.UpdateCompanyProfile)
 	protected.POST("/companies/:id/photo", api.UploadCompanyPhoto)

@@ -110,11 +110,15 @@ UPDATE companies SET role = 'admin' WHERE username = 'testuser';
 UPDATE companies SET role = 'super_admin' WHERE username = 'hendry';
 ```
 
-Jika database sudah dibuat sebelum `super_admin` ditambahkan ke enum `roles`, jalankan dulu migrasi berikut sebelum query di atas:
+### Migrasi database otomatis
 
-```bash
-psql "$DATABASE_URL" -f backend/db/migrations/001_add_super_admin_role.sql
-```
+Setiap kali container `api` start, backend otomatis menjalankan migrasi (`backend/api/migrate.go`) sebelum membuka port:
+
+- Database kosong: `backend/db/schema.sql` diterapkan, semua migrasi dicatat sebagai sudah berjalan.
+- Database lama: file di `backend/db/migrations/*.sql` yang belum tercatat di tabel `schema_migrations` dijalankan berurutan.
+- Jika migrasi gagal, container berhenti dengan log error (tidak lanjut start).
+
+File SQL di-embed ke binary, jadi migrasi baru cukup ditambahkan sebagai `backend/db/migrations/NNN_nama.sql` lalu redeploy. Migrasi harus idempoten (`IF NOT EXISTS`, dst.) dan **schema.sql juga harus ikut diperbarui** agar database baru sama dengan hasil migrasi. Untuk menjalankan manual: `./server db migrate`.
 
 Koleksi Postman lengkap tersedia di `Purchase Order Management API.postman_collection.json` (base URL sudah di-set ke `http://localhost:3455`).
 
