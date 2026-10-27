@@ -16,6 +16,7 @@ import {
 import { useAuth } from '@/context/AuthContext.jsx'
 import { ROLE_LABELS, isAdminLikeRole } from '@/types/role.js'
 import { ProfileAvatar } from '@/components/profile/ProfileAvatar.jsx'
+import { NoteInbox } from '@/components/notifications/NoteInbox.jsx'
 import logo from '@/assets/logo.png'
 
 const DASHBOARD_NAV_ITEM = { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard }
@@ -41,6 +42,7 @@ export function AppLayout() {
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const profileRef = useRef(null)
+  const isBuyer = user?.role === 'user'
 
   // Sections rendered top to bottom; a section without a `title` has no
   // heading. The admin-only section is only added for admin-like roles.
@@ -91,8 +93,22 @@ export function AppLayout() {
           <img src={logo} alt="SMS Order" className="h-8 w-auto" />
           <span className="text-base font-bold text-[#B00100]">SMS Order</span>
         </Link>
-        <div className="w-9" aria-hidden="true" />
+        {isBuyer ? (
+          <NoteInbox panelClassName="inset-x-2 top-16" />
+        ) : (
+          <div className="w-9" aria-hidden="true" />
+        )}
       </header>
+
+      {/* Buyer inbox on desktop: a floating bell at the top right whose
+          panel overlays the page. On mobile the bell lives in the top bar
+          above instead. */}
+      {isBuyer && (
+        <NoteInbox
+          className="fixed top-4 right-6 z-30 hidden lg:block"
+          panelClassName="top-16 right-6 w-96"
+        />
+      )}
 
       {/* Backdrop - dims and blocks the page behind the drawer on mobile.
           Clicking it closes the sidebar, same as tapping outside a modal. */}

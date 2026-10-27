@@ -5,12 +5,15 @@ export const UNREAD_NOTES_QUERY_KEY = ['unread-notes']
 
 /**
  * Purchase orders with unread messages in their note thread. Polled so a
- * new reply shows up on an open dashboard without a manual refresh.
+ * new reply shows up without a manual refresh.
+ *
+ * @param {{ enabled?: boolean }} [options]
  */
-export function useUnreadNotesQuery() {
+export function useUnreadNotesQuery(options = {}) {
   return useQuery({
     queryKey: UNREAD_NOTES_QUERY_KEY,
     queryFn: getUnreadNotes,
     refetchInterval: 30_000,
+    ...options,
   })
 }
