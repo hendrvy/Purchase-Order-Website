@@ -102,6 +102,11 @@ func ListBuyerOptions(c *gin.Context) {
 	})
 }
 
+// isSuperAdminCaller - Whether the authenticated caller is a super_admin.
+func isSuperAdminCaller(c *gin.Context) bool {
+	return c.GetString("role") == string(RoleSuperAdmin)
+}
+
 // AdminCreateCompany - Create a new company/user account with an explicit
 // role (user, validator, or admin). Unlike the public Register endpoint,
 // the caller here is already an authenticated admin, so the role field is
@@ -149,6 +154,15 @@ func AdminCreateCompany(c *gin.Context) {
 			Status:  http.StatusForbidden,
 			Message: "Cannot create a super_admin account",
 			Error:   "Role super_admin can only be granted via direct database access",
+		})
+		return
+	}
+
+	if company.Role == RoleAdmin && !isSuperAdminCaller(c) {
+		c.JSON(http.StatusForbidden, JsonResponse{
+			Status:  http.StatusForbidden,
+			Message: "Only a super_admin can create admin accounts",
+			Error:   "Creating an admin account requires a super_admin",
 		})
 		return
 	}
@@ -301,6 +315,17 @@ func AdminUpdateCompanyRole(c *gin.Context) {
 			Status:  http.StatusForbidden,
 			Message: "Cannot change role of a super_admin account",
 			Error:   "This account's role is permanently locked",
+		})
+		return
+	}
+
+	// Only a super_admin may touch admin-level roles: demote an admin or
+	// promote someone to admin. Plain admins manage user and validator.
+	if (company.Role == RoleAdmin || Roles(req.Role) == RoleAdmin) && !isSuperAdminCaller(c) {
+		c.JSON(http.StatusForbidden, JsonResponse{
+			Status:  http.StatusForbidden,
+			Message: "Only a super_admin can change admin roles",
+			Error:   "Promoting to admin or demoting an admin requires a super_admin",
 		})
 		return
 	}

@@ -30,10 +30,17 @@ import { RoleBadge } from '@/components/admin/RoleBadge.jsx'
  *   role: Role,
  *   disabled?: boolean,
  *   disabledTitle?: string,
+ *   options?: readonly Role[],
  *   onSelect: (role: Role) => void,
  * }} props
  */
-export function RoleUpdateControl({ role, disabled = false, disabledTitle, onSelect }) {
+export function RoleUpdateControl({
+  role,
+  disabled = false,
+  disabledTitle,
+  options = ASSIGNABLE_ROLES,
+  onSelect,
+}) {
   const [isOpen, setIsOpen] = useState(false)
   const triggerRef = useRef(null)
   const menuRef = useRef(null)
@@ -79,7 +86,7 @@ export function RoleUpdateControl({ role, disabled = false, disabledTitle, onSel
               <p className="px-1 pb-1 text-[11px] font-medium tracking-wide text-gray-400 uppercase">
                 Ubah role ke
               </p>
-              {ASSIGNABLE_ROLES.map((target) => (
+              {options.map((target) => (
                 <button
                   key={target}
                   type="button"

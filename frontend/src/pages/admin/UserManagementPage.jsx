@@ -9,7 +9,12 @@ import { Pagination } from '@/components/ui/Pagination.jsx'
 import { SortControl } from '@/components/ui/SortControl.jsx'
 import { useAuth } from '@/context/AuthContext.jsx'
 import { formatDate } from '@/lib/format.js'
-import { ASSIGNABLE_ROLES, ROLE_LABELS } from '@/types/role.js'
+import {
+  ASSIGNABLE_ROLES,
+  ROLE_LABELS,
+  canChangeRoleOf,
+  getAssignableRoles,
+} from '@/types/role.js'
 import { useCompaniesQuery } from '@/hooks/useCompaniesQuery.js'
 import { useUpdateCompanyRoleMutation } from '@/hooks/useUpdateCompanyRoleMutation.js'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue.js'
@@ -35,6 +40,18 @@ const SORT_OPTIONS = [
  */
 export function UserManagementPage() {
   const { user: currentUser } = useAuth()
+  const roleOptions = getAssignableRoles(currentUser?.role)
+
+  function canChangeRole(company) {
+    return canChangeRoleOf(currentUser?.role, company.role)
+  }
+
+  function roleDisabledTitle(company, isSelf) {
+    if (isSelf) return 'Tidak bisa mengubah role sendiri'
+    if (!canChangeRole(company)) return 'Hanya Super Admin yang bisa mengubah role Admin'
+    return undefined
+  }
+
   const [roleFilter, setRoleFilter] = useState('all')
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebouncedValue(search, 300)
@@ -266,8 +283,9 @@ export function UserManagementPage() {
                         ) : (
                           <RoleUpdateControl
                             role={company.role}
-                            disabled={isSelf || updateRoleMutation.isPending}
-                            disabledTitle={isSelf ? 'Tidak bisa mengubah role sendiri' : undefined}
+                            disabled={isSelf || !canChangeRole(company) || updateRoleMutation.isPending}
+                            disabledTitle={roleDisabledTitle(company, isSelf)}
+                            options={roleOptions}
                             onSelect={(newRole) => handleRoleChange(company, newRole)}
                           />
                         )}
@@ -399,8 +417,9 @@ export function UserManagementPage() {
                               ) : (
                                 <RoleUpdateControl
                                   role={company.role}
-                                  disabled={isSelf || updateRoleMutation.isPending}
-                                  disabledTitle={isSelf ? 'Tidak bisa mengubah role sendiri' : undefined}
+                                  disabled={isSelf || !canChangeRole(company) || updateRoleMutation.isPending}
+                                  disabledTitle={roleDisabledTitle(company, isSelf)}
+                                  options={roleOptions}
                                   onSelect={(newRole) => handleRoleChange(company, newRole)}
                                 />
                               )}

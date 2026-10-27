@@ -4,7 +4,8 @@ import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button.jsx'
-import { ASSIGNABLE_ROLES, ROLE_LABELS } from '@/types/role.js'
+import { useAuth } from '@/context/AuthContext.jsx'
+import { ASSIGNABLE_ROLES, ROLE_LABELS, getAssignableRoles } from '@/types/role.js'
 import { useCreateCompanyMutation } from '@/hooks/useCreateCompanyMutation.js'
 
 // Company name is only mandatory for "user" accounts (they represent an
@@ -38,6 +39,7 @@ const inputClassName =
  * @param {{ onClose: () => void }} props
  */
 export function AddAccountModal({ onClose }) {
+  const { user: currentUser } = useAuth()
   const createCompanyMutation = useCreateCompanyMutation()
 
   const form = useForm({
@@ -161,7 +163,7 @@ export function AddAccountModal({ onClose }) {
               Role
             </label>
             <select id="role" className={inputClassName} {...form.register('role')}>
-              {ASSIGNABLE_ROLES.map((role) => (
+              {getAssignableRoles(currentUser?.role).map((role) => (
                 <option key={role} value={role}>
                   {ROLE_LABELS[role]}
                 </option>

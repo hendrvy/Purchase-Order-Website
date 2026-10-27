@@ -30,6 +30,32 @@ export const ROLES = ['user', 'validator', 'admin', 'super_admin']
  */
 export const ASSIGNABLE_ROLES = ['user', 'validator', 'admin']
 
+/**
+ * Roles the logged-in account may assign. Only a super_admin can hand out
+ * (or take away) `admin`; a plain admin manages user and validator.
+ * Mirrors backend/api/admin_handlers.go.
+ *
+ * @param {unknown} actorRole
+ * @returns {readonly Role[]}
+ */
+export function getAssignableRoles(actorRole) {
+  return actorRole === 'super_admin'
+    ? ASSIGNABLE_ROLES
+    : ASSIGNABLE_ROLES.filter((role) => role !== 'admin')
+}
+
+/**
+ * Whether `actorRole` may change the role of an account that currently
+ * has `targetRole`. Admin accounts can only be changed by a super_admin.
+ *
+ * @param {unknown} actorRole
+ * @param {unknown} targetRole
+ * @returns {boolean}
+ */
+export function canChangeRoleOf(actorRole, targetRole) {
+  return targetRole !== 'admin' || actorRole === 'super_admin'
+}
+
 /** @type {Record<Role, string>} */
 export const ROLE_LABELS = {
   user: 'User',
