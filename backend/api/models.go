@@ -103,7 +103,7 @@ type PONote struct {
 	Message         string      `json:"message"`
 	StatusFrom      string      `json:"status_from,omitempty"`
 	StatusTo        string      `json:"status_to,omitempty"`
-	ProofType       string      `json:"proof_type,omitempty"`
+	ProofType       string      `json:"proof_type,omitempty" gorm:"default:null"`
 	AttachmentID    *uint       `json:"attachment_id,omitempty"`
 	Attachment      *Attachment `json:"attachment,omitempty" gorm:"foreignKey:AttachmentID;references:ID"`
 	CreatedAt       time.Time   `json:"created_at"`
